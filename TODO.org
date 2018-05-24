@@ -1,0 +1,52 @@
+#+STARTUP: overview
+#+STARTUP: hidestars
+#+TODO: TODO(t!) FOCUSED (f@/!) STARTED(s@/!) WAITING(w@/!) SOMEDAY(S@/!) URGENT (u!) | DONE(d!) CANCELED(c@!)
+#+PRIORITIES: A C B
+* Template for software developpment with AT91SAM9G20-EK based on FreeRTOS
+** TODO Blink a led using high level functions
+*** TODO Specification
+**** Abstract
+     Our goal is to make a led blink on the AT91SAM9G20-EK board using
+     FreeRTOS high level functions.
+     
+     In order to achieve this we need to obtain a port of the FreeRTOS
+     realtime operating system, write a blinky program, compile it,
+     flash it and verify our software.
+
+     Our standard programming language is the C programming language
+     with the current standard.
+**** TODO Porting FreeRTOs
+     The FreeRTOS real time operating system is widely used and
+     documentation on it is extensive. FreeRTOS is not entirely
+     architecture indepent this is why we need to port some specific
+     file to work with our particular μ-controller. 
+     
+     Fortunately many ports of FreeRTOS are available including one
+     for the AT91SAM9XE, which is very similar to the microcontroller
+     of the AT91SAM9G20-EK, ie. AT91SAM9G20.
+
+     We rely on the FreeRTOS documentation and the FreeRTOS port for
+     the AT91SAM9XE to port FreeRTOS to our μ-controller.
+     
+     The porting specification is dependent on the porting guide which
+     can be found on the following web site:
+     https://www.freertos.org/FreeRTOS-porting-guide.html.
+
+     In particular we need to port two files of the source directory.
+     Thos files are: Source/portable/port.c and
+     Source/portable/portmacro.h.
+     
+*** TODO Test
+**** TODO Porting FreeRTOS
+     To the correctness of the port is somewhat difficult as the are
+     no specifications available.
+
+     Therefore we will be partiucarly carefull on compiler errors and
+     communicate with FreeRTOS community to seek for advice.
+
+*** TODO Programming
+**** TODO Porting FreeRTOS
+     We will use the official port to AT91SAM9XE for reference and the
+     atmel demo software, however we will implement everything form
+     scratch.
+     
