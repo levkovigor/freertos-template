@@ -15,7 +15,7 @@ BOARD	= at91sam9g20-ek
 # TRACE_LEVEL_ERROR      2
 # TRACE_LEVEL_FATAL      1
 # TRACE_LEVEL_NO_TRACE   0
-TRACE_LEVEL	= 5
+# TRACE_LEVEL	= 5
 
 AT91LIB		= src/at91lib
 FREERTOS	= src/freertos
@@ -61,11 +61,15 @@ INCLUDES	+= -I$(FREERTOS)/include
 INCLUDES	+= -I$(FREERTOS)
 INCLUDES	+= -Isrc/
 
+OPTIM	= -O3
+
 CFLAGS	= -Wall -mlong-calls -ffunction-sections
-#CFLAGS  += -mthumb-interwork -D THUMB_INTERWORK
-CFLAGS	+= -g $(INCLUDES) -D$(CHIP) -DTRACE_LEVE=$(TRACE_LEVEL)
-ASFLAGS	= -Wall -g $(INCLUDES) -D$(CHIP) -D__ASSEMBLY__
-LDFLAGS	= -g -nostartfiles -Wl,--gc-sections
+CFLAGS	+= -fomit-frame-pointer -fno-strict-aliasing -fno-dwarf2-cfi-asm
+CFLAGS  += -mthumb-interwork -D THUMB_INTERWORK
+CFLAGS	+= -g $(OPTIM) $(INCLUDES) -D$(CHIP)
+# -DTRACE_LEVE=$(TRACE_LEVEL)
+ASFLAGS	= -Wall -g $(OPTIM) $(INCLUDES) -D$(CHIP) -D__ASSEMBLY__
+LDFLAGS	= -mthumb -g $(OPTIM) -nostartfiles -Wl,--gc-sections
 
 #-------------------------------------------------------------------------------
 #		FILES
@@ -156,7 +160,7 @@ $$(ARM_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.c Makefile $(OBJ) $(BIN)
 	$(CC) $(CFLAGS) -D$(1) -c -o $$@ $$<
 
 $$(C_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.c Makefile $(OBJ) $(BIN)
-	$(CC) $(CFLAGS) -D$(1) -c -o $$@ $$<
+	$(CC) $(CFLAGS) -mthumb -D$(1) -c -o $$@ $$<
 
 $$(ASM_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.S Makefile $(OBJ) $(BIN)
 	$(CC) $(ASFLAGS) -D$(1) -c -o $$@ $$<

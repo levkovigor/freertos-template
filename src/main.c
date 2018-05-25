@@ -1,11 +1,4 @@
-#include <board.h>
 #include <pio/pio.h>
-#include <pio/pio_it.h>
-#if defined(AT91C_BASE_PITC)
-#include <pit/pit.h>
-#endif
-#include <irq/irq.h>
-#include <tc/tc.h>
 #include <utility/led.h>
 #include <utility/trace.h>
 #include <stdio.h>
@@ -85,9 +78,15 @@ void ConfigureLeds (void) {
     LED_Configure(1);
 }
 
-int main () {
+static void prvSetupHardware (void) {
+  AT91C_BASE_AIC->AIC_EOICR = 0;
   ConfigureLeds();
+}
+
+int main () {
+  prvSetupHardware();
   LED_Set(1);
+  
   /* TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK); */
   /* printf("-- Template project %s --\n\r", SOFTPACK_VERSION); */
   /* printf("-- %s\n\r", BOARD_NAME); */
@@ -96,9 +95,8 @@ int main () {
   /* int x = many_test(); */
   /* printf("--Testouch %d \n\r", x); */
 
-  xTaskCreate(task1, "LED_0", 128, NULL, 0, NULL);
-  xTaskCreate(task2, "LED_1", 128, NULL, 0, NULL);
-
+  /* xTaskCreate(task1, "LED_0", 128, NULL, 0, NULL); */
+  /* xTaskCreate(task2, "LED_1", 128, NULL, 0, NULL); */
   vTaskStartScheduler();
 
   /*

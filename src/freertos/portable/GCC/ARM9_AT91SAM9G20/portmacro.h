@@ -150,11 +150,14 @@ typedef unsigned long UBaseType_t;
 
 #define portDISABLE_INTERRUPTS()\
   __asm volatile (\
-  "STMDB SP!, {R0}\n"\
-  "MRS R0, CPSR\n"\
-  "ORR R0, R0, #0xC0\n"\
-  "MSR CPSR, R0\n"\
-  "LDMIA SP!, {R0}\n")
+  "STMDB	SP!, {R0}\n"\
+  "MRS	R0, CPSR\n"\
+  "ORR    R0, R0, #0x80\n"\
+  "MSR    CPSR, R0\n"\
+  "ORR    R0, R0, #0x40\n"\
+  "MSR	CPSR, R0\n"
+  "LDMIA	SP!, {R0}\n"\
+  "BX		R14" )
 
 #define portENABLE_INTERRUPTS()\
   __asm volatile (\

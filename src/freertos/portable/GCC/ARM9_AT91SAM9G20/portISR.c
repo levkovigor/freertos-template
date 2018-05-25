@@ -30,6 +30,7 @@ void vPortTickISR( void );
 
 void vPortTickISR( void )
 {
+  portSAVE_CONTEXT();
   volatile uint32_t ulDummy;
   volatile uint32_t status;
   // Read the PIT status register
@@ -44,7 +45,7 @@ void vPortTickISR( void )
     //Returns the number of occurrences of periodic intervals since the last read of PIT_PIVR.
     ulDummy  += (PIT_GetPIVR() >> 20);
   }
-  
+  portRESTORE_CONTEXT();
   /* Increment the tick count - which may wake some tasks but as the
      preemptive scheduler is not being used any woken task is not given
      processor time no matter what its priority. */
@@ -67,9 +68,11 @@ void vPortDisableInterruptsFromThumb( void )
 {
 	__asm volatile (
 		"STMDB	SP!, {R0}		\n\t"	/* Push R0.									*/
-		"MRS	R0, CPSR		\n\t"	/* Get CPSR.								*/
-		"ORR	R0, R0, #0xC0	\n\t"	/* Disable IRQ, FIQ.						*/
-		"MSR	CPSR, R0		\n\t"	/* Write back modified value.				*/
+		"MRS	R0, CPSR		\n\t"	/* Get CPSR. */
+		"ORR    R0, R0, #0x80\n"
+		"MSR    CPSR, R0\n"	
+		"ORR    R0, R0, #0x40\n"
+		"MSR	CPSR, R0		\n\t"	
 		"LDMIA	SP!, {R0}		\n\t"	/* Pop R0.									*/
 		"BX		R14" );					/* Return back to thumb.					*/
 }
@@ -95,12 +98,16 @@ in a variable, which is then saved as part of the stack context. */
 void vPortEnterCritical( void )
 {
 	/* Disable interrupts as per portDISABLE_INTERRUPTS(); 							*/
-	__asm volatile (
-		"STMDB	SP!, {R0}			\n\t"	/* Push R0.								*/
-		"MRS	R0, CPSR			\n\t"	/* Get CPSR.							*/
-		"ORR	R0, R0, #0xC0		\n\t"	/* Disable IRQ, FIQ.					*/
-		"MSR	CPSR, R0			\n\t"	/* Write back modified value.			*/
-		"LDMIA	SP!, {R0}" );				/* Pop R0.								*/
+  	__asm volatile (
+		"STMDB	SP!, {R0}		\n\t"	/* Push R0.									*/
+		"MRS	R0, CPSR		\n\t"	/* Get CPSR. */
+		"ORR    R0, R0, #0x80\n"
+		"MSR    CPSR, R0\n"	
+		"ORR    R0, R0, #0x40\n"
+		"MSR	CPSR, R0		\n\t" 
+		"LDMIA	SP!, {R0}		\n\t"	/* Pop R0.									*/
+		"BX		R14" );
+
 
 	/* Now interrupts are disabled ulCriticalNesting can be accessed
 	directly.  Increment ulCriticalNesting to keep a count of how many times
