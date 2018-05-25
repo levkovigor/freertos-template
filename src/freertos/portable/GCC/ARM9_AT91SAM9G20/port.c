@@ -45,7 +45,7 @@
 /*-----------------------------------------------------------*/
 
 /* Constants required to setup the initial stack. */
-#define portINITIAL_SPSR                        ((StackType_t) 0x1f)
+#define portINITIAL_SPSR                        ((StackType_t) 0x5f)
 /* System mode, ARM mode, interrupts enabled. */
 #define portTHUMB_MODE_BIT          		((StackType_t) 0x20)
 #define portINSTRUCTION_SIZE			((StackType_t) 4)
@@ -54,7 +54,7 @@
 #define PIT_PERIOD                              1000
 
 /* Constants required to handle critical sections. */
-#define portNO_CRITICAL_NESTING 		((uint32_t)0)
+#define portNO_CRITICAL_NESTING 		((StackType_t) 0)
 
 
 #define portINT_LEVEL_SENSITIVE                 0
