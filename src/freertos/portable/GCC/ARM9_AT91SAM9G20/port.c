@@ -51,7 +51,7 @@
 #define portINSTRUCTION_SIZE			((StackType_t) 4)
 
 /* Constants required to setup the PIT. */
-#define PIT_PERIOD                              1000
+#define portPIT_PERIOD                              1000
 
 /* Constants required to handle critical sections. */
 #define portNO_CRITICAL_NESTING 		((StackType_t) 0)
@@ -64,7 +64,6 @@
 
 /* Setup the PIT to generate the tick interrupts. */
 static void prvSetupTimerInterrupt( void );
-
 
 /*-----------------------------------------------------------*/
 
@@ -176,7 +175,7 @@ static void prvSetupTimerInterrupt( void )
 {
   extern void vPortTickISR (void);
     // Initialize the PIT to the desired frequency
-    PIT_Init(PIT_PERIOD, BOARD_MCK / 1000000);
+    PIT_Init(portPIT_PERIOD, BOARD_MCK / 1000000);
 
     // Configure interrupt on PIT
     IRQ_DisableIT(AT91C_ID_SYS);
