@@ -1,5 +1,5 @@
 # FreeRTOS Template Repository 
-This repository is template project that indicates how to produce, test and run arbitrary software base on the FreeRTOS real time operating system on the AT91SAM9G20-EK evaluation board. It uses the AT91LIB
+This repository is a template for projects that indicates how to produce, test and run arbitrary software based on the FreeRTOS real time operating system on the AT91SAM9G20-EK evaluation board. It uses the AT91LIB.
 
 ## TODO file
 In the TODO.org file you shall find plenty of detail on the workflow
