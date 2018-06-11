@@ -1,5 +1,5 @@
-set bootstrap    "/home/colin/Documents/apc/at91bootstrap/binaries/at91sam9g20ek-nandflashboot--3.8.10.bin"
-set img          "/home/colin/Documents/apc/template-freertos/bin/img-at91sam9g20-ek-at91sam9g20-sdram.bin"
+set bootstrap    "./opt/flashing/at91sam9g20ek-nandflashboot--3.8.10.bin"
+set img          "./bin/img-at91sam9g20-ek-at91sam9g20-sdram.bin"
 
 
 NANDFLASH::Init
