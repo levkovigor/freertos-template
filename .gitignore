@@ -41,6 +41,10 @@ Temporary Items
 
 *~
 
+#GDB
+cmd.gdb
+gdb.txt
+
 # LaTeX
 
 *.out
