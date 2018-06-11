@@ -28,4 +28,4 @@ then
     exit
 fi
 
-exec gdb-multiarch -x cmd1.gdb -ex reset $img
+exec gdb-multiarch -x cmd.gdb -ex reset $img

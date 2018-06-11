@@ -4,7 +4,8 @@
 #+PRIORITIES: A C B
 * Template for software developpment with AT91SAM9G20-EK based on FreeRTOS
 ** TODO Blink a led using high level functions
-*** TODO Specification
+*** DONE Specification
+    - State "DONE"       from "TODO"       [2018-06-11 Mon 17:09]
 **** Abstract
      Our goal is to make a led blink on the AT91SAM9G20-EK board using
      FreeRTOS high level functions.
@@ -15,7 +16,9 @@
 
      Our standard programming language is the C programming language
      with the current standard.
-**** TODO Porting FreeRTOs
+**** DONE Porting FreeRTOs
+     - State "DONE"       from "TODO"       [2018-06-11 Mon 16:59]
+   
      The FreeRTOS real time operating system is widely used and
      documentation on it is extensive. FreeRTOS is not entirely
      architecture indepent this is why we need to port some specific
@@ -41,12 +44,38 @@
      To the correctness of the port is somewhat difficult as the are
      no specifications available.
 
-     Therefore we will be partiucarly carefull on compiler errors and
+     Therefore we will be particularly carefull on compiler errors and
      communicate with FreeRTOS community to seek for advice.
 
-*** TODO Programming
-**** TODO Porting FreeRTOS
+     Advices for testing FreeRTOS port are available on the community
+     forum. Some advice to test the following behaviors : check the
+     tick frequency is correct with an oscilloscope, verify that
+     context switching is correct and run demo tasks.
+
+     The is exactly the same as the core doesn't change and is
+     packaged by the same manufacturer thant the port we git inspired
+     from. However, correct tick frequency and functionnal test are
+     required to be validated.
+
+*** DONE Programming
+    - State "DONE"       from "TODO"       [2018-06-11 Mon 17:08]
+**** DONE Porting FreeRTOS
+     - State "DONE"       from "TODO"       [2018-06-11 Mon 17:08]
      We will use the official port to AT91SAM9XE for reference and the
      atmel demo software, however we will implement everything form
      scratch.
      
+* Notes
+  You shall note that AT91LIB was left untouched. The startup file has
+  been patched to load FreeRTOS callbacks on exception handlers in
+  src/boot_fstartup.S .
+  
+  As well, to improve portability some scripts where re-written in
+  bash i.e. debug.pl .
+  
+  The following makefile targets : jlink, flashing, connect are only
+  for convenience and call scripts for, respectively, start a j-link
+  communication, flashing the board and connecting to the debug
+  port. These scripts use third party software and should be adapted
+  according to your usage an set-up. They are included only for
+  convenience.
