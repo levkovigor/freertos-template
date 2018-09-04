@@ -3,36 +3,37 @@
 #include <pio/pio_it.h>
 #include <pit/pit.h>
 #include <tc/tc.h>
-#include <irq/irq.h>
+#include <aic/aic.h>
 #include <utility/led.h>
 #include <utility/trace.h>
 #include <stdio.h>
-#include <FreeRTOS.h>
-#include <task.h>
 
-void task1(void *pParam) {
-	int i = 0;
-	while(1) {
-		i++;
-	        LED_Toggle(1);
-		vTaskDelay(500);
-	}
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <Drivers/I2C.h>
+#include <Drivers/UART.h>
+
+void led_blink(void *pParams){
+  do{
+    LED_Toggle(1);
+    vTaskDelay(2000);
+  }
+  while(1);
 }
 
 
-void ConfigureLeds (void) {
-  LED_Configure(1);
-}
-
-int main () {
+int main(void)
+{
+  // DBGU output configuration
   TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
-  printf("-- Template project %s --\n\r", SOFTPACK_VERSION);
+  printf("-- Getting Started Project %s --\n\r", SOFTPACK_VERSION);
   printf("-- %s\n\r", BOARD_NAME);
   printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
-  ConfigureLeds();
-  LED_Set(1);
-  
-  xTaskCreate(task1, "TASK_1", 128, NULL, 0, NULL);
+
+  LED_Configure(1);
+
+  xTaskCreate(led_blink, (const signed char*) "led_blink", configMINIMAL_STACK_SIZE,
+	      NULL, configMAX_PRIORITIES - 1, NULL );
   vTaskStartScheduler();
-  return 1;
 }

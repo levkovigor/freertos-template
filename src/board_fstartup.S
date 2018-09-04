@@ -37,12 +37,34 @@
 //         Definitions
 //------------------------------------------------------------------------------
 
-#define IRQ_STACK_SIZE   8*3*4
 
-#define ARM_MODE_ABT     0x17
-#define ARM_MODE_FIQ     0x11
-#define ARM_MODE_IRQ     0x12
-#define ARM_MODE_SVC     0x13
+// If you change any of these from 0 to non-zero,
+// make sure to add instructions to actually reserve this stack space
+
+#define UND_STACK_SIZE	0x00000000
+/* Stack size for "undefined instruction" interrupts */
+#define ABT_STACK_SIZE	0x00000000
+/* Stack size for "abort" interrupts */
+#define FIQ_STACK_SIZE	0x00000000
+/* Stack size for "FIQ" interrupts */
+#define IRQ_STACK_SIZE	0x00018000
+/* Stack size for "IRQ" normal interrupts */
+#define SVC_STACK_SIZE	0x00018000
+/* Stack size for "SVC" supervisor mode	*/
+#define ARM_MODE_USR	0x10
+/* Normal User Mode*/
+#define ARM_MODE_FIQ	0x11
+/* FIQ Processing Fast Interrupts Mode */
+#define ARM_MODE_IRQ	0x12
+/* IRQ Processing Standard Interrupts Mode */
+#define ARM_MODE_SVC	0x13
+/* Supervisor Processing Software Interrupts Mode */
+#define ARM_MODE_ABT	0x17
+/* Abort Processing memory Faults Mode	*/
+#define ARM_MODE_UND	0x1B
+/* Undefined Processing Undefined Instructions Mode */
+#define ARM_MODE_SYS	0x1F
+/* System Running Priviledged Operating System Tasks Mode */
 
 #define I_BIT            0x80
 #define F_BIT            0x40
@@ -67,11 +89,15 @@ resetVector:
 undefVector:
         b       undefVector             /* Undefined instruction */
 swiVector:
+#ifdef no_os
+	b	irqHandler
+#else	
         ldr     pc, =vPortYieldProcessor /* Software interrupt */
+#endif
 prefetchAbortVector:
-        b       prefetchAbortVector     /* Prefetch abort */
+        ldr     pc, =startOverPrefetchAbort /* Prefetch abort */
 dataAbortVector:
-        b       dataAbortVector         /* Data abort */
+        ldr     pc, =startOverDataAbort /* Data abort */
 reservedVector:
         b       reservedVector          /* Reserved for future use */
 irqVector:
@@ -193,7 +219,7 @@ irqHandler:
 //------------------------------------------------------------------------------
 /// Initializes the chip and branches to the main() function.
 //------------------------------------------------------------------------------
-            .section    .text
+            .section    .startup
             .global     entry
 
 entry:
@@ -207,7 +233,7 @@ resetHandler:
 
 /* Initialize the prerelocate segment */
 1:
-        ldr     r0, =_efixed
+        ldr     r0, =_eextab
         ldr     r1, =_sprerelocate
         ldr     r2, =_eprerelocate
 1:
@@ -243,20 +269,42 @@ resetHandler:
         bcc     1b
 
 /* Setup stacks
- **************/
+**************/
+	ldr     r0, =_sstack /* Save the start of the stack in r0 */
+        ldr     sp, =_sstack
 /* IRQ mode */
         msr     CPSR_c, #ARM_MODE_IRQ | I_BIT | F_BIT
-        ldr     sp, =_sstack
-        sub     r4, sp, #IRQ_STACK_SIZE
+        mov     sp, r0
+        sub     r0, r0, #IRQ_STACK_SIZE
 
 /* Supervisor mode (interrupts enabled) */
-        msr     CPSR_c, #ARM_MODE_SVC | F_BIT
-        mov     sp, r4
+        msr     CPSR_c, #ARM_MODE_SVC |I_BIT | F_BIT
+        mov     sp, r0
+        sub     r0, r0, #SVC_STACK_SIZE
+
+/* System mode, the normal mode of operation */
+        msr     CPSR_c, #ARM_MODE_SYS | I_BIT | F_BIT
+        mov     sp, r0
+
+/* Start in supervisor mode, Operation will switch to system mode when the first task starts */
+        msr     CPSR_c, #ARM_MODE_SVC | I_BIT | F_BIT
 
 /* Branch to main()
  ******************/
         ldr     r0, =main
         blx     r0
+
+startOver:
+		ldr     r0, =restart
+		blx		r0
+
+startOverPrefetchAbort:
+		ldr     r0, =restartPrefetchAbort
+		blx		r0
+
+startOverDataAbort:
+		ldr     r0, =restartDataAbort
+		blx		r0
 
 /* Loop indefinitely when program is finished */
 1:
