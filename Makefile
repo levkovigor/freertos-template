@@ -159,7 +159,12 @@ C_OBJECTS	+= event_groups.o
 C_OBJECTS	+= list.o
 C_OBJECTS	+= stream_buffer.o
 C_OBJECTS	+= timers.o
+<<<<<<< HEAD
 C_OBJECTS	+= heap_1.o
+=======
+C_OBJECTS	+= standardMemMang.o
+C_OBJECTS 	+= hooks.o
+>>>>>>> 3627358... Removed old test files
 
 # Objects build from assembly source files
 ASM_OBJECTS	= board_fstartup.o
