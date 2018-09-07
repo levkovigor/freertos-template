@@ -165,7 +165,6 @@ C_OBJECTS	+= ExitHandler.o
 
 # FreeRTOS objects build from C source files
 C_OBJECTS	+= port.o
-C_OBJECTS	+= portISR.o
 C_OBJECTS	+= tasks.o
 C_OBJECTS	+= queue.o
 C_OBJECTS	+= event_groups.o
