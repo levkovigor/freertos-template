@@ -1,6 +1,5 @@
 /*
-    FreeRTOS V7.5.3 - Copyright (C) 2013 Real Time Engineers Ltd. 
-    All rights reserved
+    FreeRTOS V7.5.0 - Copyright (C) 2013 Real Time Engineers Ltd.
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
@@ -63,96 +62,64 @@
     1 tab == 4 spaces!
 */
 
+#ifndef FREERTOS_CONFIG_H
+#define FREERTOS_CONFIG_H
+
+#include <board.h>
+#include <at91/utility/trace.h>
+#include <at91/utility/assert.h>
+
 /*-----------------------------------------------------------
- * Portable layer API.  Each function must be defined for each port.
+ * Application specific definitions.
+ *
+ * These definitions should be adjusted for your particular hardware and
+ * application requirements.
+ *
+ * THESE PARAMETERS ARE DESCRIBED WITHIN THE 'CONFIGURATION' SECTION OF THE
+ * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.
+ *
+ * See http://www.freertos.org/a00110.html.
  *----------------------------------------------------------*/
 
-#ifndef PORTABLE_H
-#define PORTABLE_H
+#define configUSE_PREEMPTION			0
+#define configUSE_IDLE_HOOK				1
+#define configUSE_TICK_HOOK				0
+#define configCPU_CLOCK_HZ				( ( unsigned long ) BOARD_PROCESSOR_CLOCK )
+#define configTICK_RATE_HZ				( ( portTickType ) 1000 ) // Do not change this value
+#define configMAX_PRIORITIES			( ( unsigned portBASE_TYPE ) 5 )
+#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 190 )
+#define configTOTAL_HEAP_SIZE			( ( size_t ) ( 40000 ) )
+#define configMAX_TASK_NAME_LEN			( 32 )
+#define configUSE_TRACE_FACILITY		0
+#define configUSE_16_BIT_TICKS			0
+#define configIDLE_SHOULD_YIELD			0
+#define configUSE_MUTEXES				1
+#define configCHECK_FOR_STACK_OVERFLOW	1
+#define configUSE_RECURSIVE_MUTEXES		1
+#define configQUEUE_REGISTRY_SIZE		32
+#define configUSE_COUNTING_SEMAPHORES	1
 
-/* Include the macro file relevant to the port being used. */
+/* Co-routine definitions. */
+#define configUSE_CO_ROUTINES 		0
+#define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
 
-#include "freertos/portable/GCC/ARM9_AT91SAM9G20/portmacro.h"
-#include "freertos/portable/MemMang/standardMemMang.h"
-	
-#if portBYTE_ALIGNMENT == 8
-	#define portBYTE_ALIGNMENT_MASK ( 0x0007 )
-#endif
+/* Define configASSERT() to call vAssertCalled() if the assertion fails.  The assertion
+has failed if the value of the parameter passed into configASSERT() equals zero. */
+#define configASSERT( x )  SANITY_CHECK( ( x ) )
 
-#if portBYTE_ALIGNMENT == 4
-	#define portBYTE_ALIGNMENT_MASK	( 0x0003 )
-#endif
+/* Set the following definitions to 1 to include the API function, or zero
+to exclude the API function. */
 
-#if portBYTE_ALIGNMENT == 2
-	#define portBYTE_ALIGNMENT_MASK	( 0x0001 )
-#endif
+#define INCLUDE_vTaskPrioritySet			1
+#define INCLUDE_uxTaskPriorityGet			1
+#define INCLUDE_vTaskDelete					1
+#define INCLUDE_vTaskCleanUpResources		0
+#define INCLUDE_vTaskSuspend				1
+#define INCLUDE_vTaskDelayUntil				1
+#define INCLUDE_vTaskDelay					1
+#define INCLUDE_xTaskResumeFromISR			1
+#define INCLUDE_xTaskGetCurrentTaskHandle	1
+#define INCLUDE_eTaskGetState               1
+#define INCLUDE_xTaskGetSchedulerState		1
 
-#if portBYTE_ALIGNMENT == 1
-	#define portBYTE_ALIGNMENT_MASK	( 0x0000 )
-#endif
-
-#ifndef portBYTE_ALIGNMENT_MASK
-	#error "Invalid portBYTE_ALIGNMENT definition"
-#endif
-
-#ifndef portNUM_CONFIGURABLE_REGIONS
-	#define portNUM_CONFIGURABLE_REGIONS 1
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "mpu_wrappers.h"
-
-/*
- * Setup the stack of a new task so it is ready to be placed under the
- * scheduler control.  The registers have to be placed on the stack in
- * the order that the port expects to find them.
- *
- */
-#if( portUSING_MPU_WRAPPERS == 1 )
-	portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE pxCode, void *pvParameters, portBASE_TYPE xRunPrivileged ) PRIVILEGED_FUNCTION;
-#else
-	portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE pxCode, void *pvParameters ) PRIVILEGED_FUNCTION;
-#endif
-
-/*
- * Map to the memory management routines required for the port.
- */
-void *pvPortMalloc( size_t xSize ) PRIVILEGED_FUNCTION;
-void vPortFree( void *pv ) PRIVILEGED_FUNCTION;
-void vPortInitialiseBlocks( void ) PRIVILEGED_FUNCTION;
-size_t xPortGetFreeHeapSize( void ) PRIVILEGED_FUNCTION;
-
-/*
- * Setup the hardware ready for the scheduler to take control.  This generally
- * sets up a tick interrupt and sets timers for the correct tick frequency.
- */
-portBASE_TYPE xPortStartScheduler( void ) PRIVILEGED_FUNCTION;
-
-/*
- * Undo any hardware/ISR setup that was performed by xPortStartScheduler() so
- * the hardware is left in its original condition after the scheduler stops
- * executing.
- */
-void vPortEndScheduler( void ) PRIVILEGED_FUNCTION;
-
-/*
- * The structures and methods of manipulating the MPU are contained within the
- * port layer.
- *
- * Fills the xMPUSettings structure with the memory region information
- * contained in xRegions.
- */
-#if( portUSING_MPU_WRAPPERS == 1 )
-	struct xMEMORY_REGION;
-	void vPortStoreTaskMPUSettings( xMPU_SETTINGS *xMPUSettings, const struct xMEMORY_REGION * const xRegions, portSTACK_TYPE *pxBottomOfStack, unsigned short usStackDepth ) PRIVILEGED_FUNCTION;
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* PORTABLE_H */
-
+#endif /* FREERTOS_CONFIG_H */

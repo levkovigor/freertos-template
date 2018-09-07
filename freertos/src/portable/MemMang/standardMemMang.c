@@ -5,7 +5,7 @@
  *      Author: Akhil Piplani
  */
 
-#include <FreeRTOSConfig.h>
+#include "freertos/FreeRTOSConfig.h"
 #include <stdlib.h>
 
 void *pvPortMalloc( size_t xSize ) {

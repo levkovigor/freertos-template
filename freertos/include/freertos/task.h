@@ -1,5 +1,6 @@
 /*
-    FreeRTOS V7.5.0 - Copyright (C) 2013 Real Time Engineers Ltd.
+    FreeRTOS V7.5.3 - Copyright (C) 2013 Real Time Engineers Ltd. 
+    All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
@@ -70,7 +71,7 @@
 	#error "include FreeRTOS.h must appear in source files before include task.h"
 #endif
 
-#include "list.h"
+#include "freertos/list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,7 +81,7 @@ extern "C" {
  * MACROS AND DEFINITIONS
  *----------------------------------------------------------*/
 
-#define tskKERNEL_VERSION_NUMBER "V7.5.0"
+#define tskKERNEL_VERSION_NUMBER "V7.5.3"
 
 /**
  * task. h

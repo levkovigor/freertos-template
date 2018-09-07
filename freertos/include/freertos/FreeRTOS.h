@@ -1,5 +1,6 @@
 /*
-    FreeRTOS V7.5.0 - Copyright (C) 2013 Real Time Engineers Ltd.
+    FreeRTOS V7.5.3 - Copyright (C) 2013 Real Time Engineers Ltd. 
+    All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
@@ -72,10 +73,10 @@
 #include <stddef.h>
 
 /* Basic FreeRTOS definitions. */
-#include "projdefs.h"
+#include "freertos/projdefs.h"
 
 /* Application specific configuration options. */
-#include "FreeRTOSConfig.h"
+#include "freertos/FreeRTOSConfig.h"
 
 /* configUSE_PORT_OPTIMISED_TASK_SELECTION must be defined before portable.h
 is included as it is used by the port layer. */
@@ -84,7 +85,7 @@ is included as it is used by the port layer. */
 #endif
 
 /* Definitions specific to the port being used. */
-#include "portable.h"
+#include "freertos/portable.h"
 
 
 /* Defines the prototype to which the application task hook function must
@@ -162,7 +163,7 @@ typedef portBASE_TYPE (*pdTASK_HOOK_CODE)( void * );
 #endif
 
 #ifndef INCLUDE_pcTaskGetTaskName
-	#define INCLUDE_pcTaskGetTaskName 0
+	#define INCLUDE_pcTaskGetTaskName 1
 #endif
 
 #ifndef configUSE_APPLICATION_TASK_TAG
@@ -509,6 +510,14 @@ typedef portBASE_TYPE (*pdTASK_HOOK_CODE)( void * );
 
 #ifndef traceTIMER_COMMAND_RECEIVED
 	#define traceTIMER_COMMAND_RECEIVED( pxTimer, xMessageID, xMessageValue )
+#endif
+
+#ifndef traceMALLOC
+    #define traceMALLOC( pvAddress, uiSize )
+#endif
+
+#ifndef traceFREE
+    #define traceFREE( pvAddress, uiSize )
 #endif
 
 #ifndef configGENERATE_RUN_TIME_STATS

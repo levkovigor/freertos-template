@@ -1,5 +1,6 @@
 /*
-    FreeRTOS V7.5.0 - Copyright (C) 2013 Real Time Engineers Ltd.
+    FreeRTOS V7.5.3 - Copyright (C) 2013 Real Time Engineers Ltd. 
+    All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
@@ -72,7 +73,7 @@
 
 /*lint -e537 This headers are only multiply included if the application code
 happens to also be including task.h. */
-#include "task.h"
+#include "freertos/task.h"
 /*lint +e956 */
 
 #ifdef __cplusplus

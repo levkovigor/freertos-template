@@ -5,9 +5,9 @@
  *      Author: pbot
  */
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <utility/exithandler.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <at91/utility/exithandler.h>
 
 #include <stdio.h>
 
