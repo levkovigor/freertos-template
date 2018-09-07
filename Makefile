@@ -46,7 +46,7 @@ BOARD	= at91sam9g20-ek
 TRACE_LEVEL	= 5
 
 # Optimization level, put in comment for debugging
-OPTIMIZATION 	= -Os
+OPTIMIZATION 	= -O0
 
 AT91LIB		= ./at91lib
 FREERTOS	= ./freertos
@@ -98,19 +98,20 @@ TARGET_OPTS =
 endif
 
 CFLAGS	=  $(TARGET_OPTS)
-CFLAGS	+= -Wall -mlong-calls -ffunction-sections
-CFLAGS	+= -g $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVE=$(TRACE_LEVEL)
+CFLAGS	+= -Wall -mlong-calls -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
+CFLAGS	+= -g $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL)
 ASFLAGS	= $(TARGET_OPTS) -Wall -g $(OPTIM) $(INCLUDES) -D$(CHIP) -D__ASSEMBLY__
-LDFLAGS	= -g $(OPTIMIZATION) -nostartfiles $(TARGET_OPTS) -Wl,--gc-sections
+LDFLAGS	= -g $(OPTIMIZATION) -nostartfiles $(TARGET_OPTS) -Wl,--gc-sections 
 
 #-------------------------------------------------------------------------------
 #		FILES
 #-------------------------------------------------------------------------------
 
 # Directories where source files can be found
-UTILITY	= $(AT91LIB)/utility
-PERIPH	= $(AT91LIB)/peripherals
-BOARDS	= $(AT91LIB)/boards
+UTILITY	= $(AT91LIB)/src/utility
+PERIPH	= $(AT91LIB)/src/peripherals
+BOARDS	= $(AT91LIB)/src/boards
+DRIVERS = $(AT91LIB)/src/drivers
 
 PORT	= $(FREERTOS)/src/portable/GCC/ARM9_AT91SAM9G20
 MEM_MGT	= $(FREERTOS)/src/portable/MemMang
@@ -119,12 +120,16 @@ VPATH   = src/
 VPATH	+= $(UTILITY)
 VPATH	+= $(PERIPH)/dbgu
 VPATH	+= $(PERIPH)/irq
+VPATH	+= $(PERIPH)/aic
 VPATH	+= $(PERIPH)/pio
 VPATH	+= $(PERIPH)/pit
 VPATH	+= $(PERIPH)/tc
 VPATH	+= $(PERIPH)/pmc
 VPATH	+= $(PERIPH)/cp15
+VPATH	+= $(PERIPH)/usart
+VPATH	+= $(PERIPH)/twi
 VPATH	+= $(PERIPH)/systicks
+VPATH   += $(DRIVERS)/twi
 VPATH	+= $(BOARDS)/$(BOARD)
 VPATH	+= $(BOARDS)/$(BOARD)/$(CHIP)
 VPATH	+= $(MEM_MGT)
@@ -133,7 +138,8 @@ VPATH	+= $(FREERTOS)
 
 
 # Objects build from C source files
-C_OBJECTS	= main.o
+C_OBJECTS	 = main.o
+C_OBJECTS	+= I2Ctest.o
 
 # AT91LIB objects
 C_OBJECTS	+= led.o
@@ -147,8 +153,15 @@ C_OBJECTS	+= board_lowlevel.o
 C_OBJECTS	+= trace.o
 C_OBJECTS	+= board_memories.o
 C_OBJECTS	+= aic.o
+C_OBJECTS	+= iaic.o
 C_OBJECTS	+= cp15.o
 C_OBJECTS	+= pit.o
+C_OBJECTS	+= usart.o
+C_OBJECTS	+= twi.o
+C_OBJECTS	+= twid.o
+C_OBJECTS	+= math.o
+C_OBJECTS	+= syscalls.o
+C_OBJECTS	+= ExitHandler.o
 
 # FreeRTOS objects build from C source files
 C_OBJECTS	+= port.o
@@ -161,7 +174,7 @@ C_OBJECTS	+= stream_buffer.o
 C_OBJECTS	+= timers.o
 C_OBJECTS	+= standardMemMang.o
 C_OBJECTS 	+= hooks.o
-
+C_OBJECTS	+= croutine.o
 # Objects build from assembly source files
 ASM_OBJECTS	= board_fstartup.o
 
@@ -183,8 +196,8 @@ define RULES
 C_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(C_OBJECTS))
 ASM_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(ASM_OBJECTS))
 
-$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1))
-	$(CC) $(LDFLAGS) -T"$(AT91LIB)/boards/$(BOARD)/$(CHIP)/$$@.lds" \
+$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lHALD 
+	$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
 	-o $(OUTPUT)-$$@.elf $$^
 	$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin
 	$(SIZE) $$^ $(OUTPUT)-$$@.elf
