@@ -33,7 +33,7 @@
 #-------------------------------------------------------------------------------
 
 CHIP	= at91sam9g20
-BOARD	= at91sam9g20-ek
+BOARD	= ISIS_OBC_G20
 
 # Trace level used for compilation
 # (can be overriden by adding TRACE_LEVEL=#number to the command-line)
@@ -54,11 +54,13 @@ FREERTOS	= ./freertos
 # Output file basename
 OUTPUT		= img-$(BOARD)-$(CHIP)
 
-# Compile with chip specific features
-include $(AT91LIB)/boards/$(BOARD)/$(CHIP)/chip.mak
+CHIP_CORE	= arm926ej_s
+CHIP_IP_MCI  	= MCI_PDC
+CHIP_IP_UDP  	= USB_UDP
+CHIP_IP_UHP  	= USB_OHCI
 
-# Compile for all memories available on the board (this sets $(MEMORIES))
-include $(AT91LIB)/boards/$(BOARD)/board.mak
+MEMORIES	= sdram norflash sram	
+
 
 # Output directories
 BIN		= bin
@@ -91,17 +93,19 @@ INCLUDES	+= -I$(FREERTOS)/include
 INCLUDES	+= -I$(FREERTOS)
 INCLUDES	+= -Isrc/
 
-ifeq ($(CHIP_CORE), cortexm3)
-TARGET_OPTS = -mcpu=cortex-m3 -mthumb
-else
-TARGET_OPTS =
-endif
+TARGET_OPTS = -mcpu=arm926ej-s
 
 CFLAGS	=  $(TARGET_OPTS)
-CFLAGS	+= -Wall -mlong-calls -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
+CFLAGS	+= -Wall -Wextra -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
+CFLAGS	+= -DDEBUG=1 
 CFLAGS	+= -g $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL)
-ASFLAGS	= $(TARGET_OPTS) -Wall -g $(OPTIM) $(INCLUDES) -D$(CHIP) -D__ASSEMBLY__
-LDFLAGS	= -g $(OPTIMIZATION) -nostartfiles $(TARGET_OPTS) -Wl,--gc-sections 
+ASFLAGS	=  $(TARGET_OPTS)
+ASFLAGS += -Wall -Wextra -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
+ASFLAGS += -DDEBUG=1
+ASFLAGS += $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL) -D__ASSEMBLY__
+LDFLAGS	=  $(TARGET_OPTS)  $(OPTIMIZATION) -fmessage-length=0 -ffunction-sections -Wall -Wextra
+LDFLAGS += -g -Wl,-Map,$(OUTPUT).map -nostartfiles -Xlinker --gc-sections
+
 
 #-------------------------------------------------------------------------------
 #		FILES
@@ -139,11 +143,11 @@ VPATH	+= $(FREERTOS)
 
 # Objects build from C source files
 C_OBJECTS	 = main.o
-C_OBJECTS	+= I2Ctest.o
+C_OBJECTS	+= checksumTest.o
 
 # AT91LIB objects
-C_OBJECTS	+= led.o
-C_OBJECTS	+= stdio.o
+# C_OBJECTS	+= led.o
+# C_OBJECTS	+= stdio.o
 C_OBJECTS	+= dbgu.o
 C_OBJECTS	+= pio.o
 C_OBJECTS	+= pio_it.o
@@ -153,12 +157,10 @@ C_OBJECTS	+= board_lowlevel.o
 C_OBJECTS	+= trace.o
 C_OBJECTS	+= board_memories.o
 C_OBJECTS	+= aic.o
-C_OBJECTS	+= iaic.o
 C_OBJECTS	+= cp15.o
 C_OBJECTS	+= pit.o
-C_OBJECTS	+= usart.o
-C_OBJECTS	+= twi.o
-C_OBJECTS	+= twid.o
+C_OBJECTS	+= usart_at91.o
+C_OBJECTS	+= twi_at91.o
 C_OBJECTS	+= math.o
 C_OBJECTS	+= syscalls.o
 C_OBJECTS	+= ExitHandler.o
@@ -178,7 +180,7 @@ C_OBJECTS	+= croutine.o
 ASM_OBJECTS	= board_fstartup.o
 
 # AT91LIB objects built from assembly source files 
-ASM_OBJECTS	+= cp15_asm_gcc.o
+ASM_OBJECTS	+= cp15_asm.o
 
 #Append OBJ and BIN directories to output filename
 OUTPUT	:= $(BIN)/$(OUTPUT)
@@ -195,15 +197,16 @@ define RULES
 C_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(C_OBJECTS))
 ASM_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(ASM_OBJECTS))
 
-$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lHALD 
+$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lHALD
 	$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
-	-o $(OUTPUT)-$$@.elf $$^
+	--specs=nano.specs -lc -u _printf_float -u _scanf_float -o $(OUTPUT)-$$@.elf $$^
 	$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin
-	$(SIZE) $$^ $(OUTPUT)-$$@.elf
+	$(SIZE) --format=berkeley $$^ $(OUTPUT)-$$@.elf
 
 $$(C_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.c Makefile $(OBJ) $(BIN)
 	@echo $(CFLAGS)
-	$(CC) $(CFLAGS) -D$(1) -c -o $$@ $$<
+	$(CC) -E -C $(CFLAGS) -D$(1) -MMD -MP -MF$$(@:%o=%d) -MT$$(@:%o=%d) -o $$(@:%o=%i) $$<
+	$(CC) $(CFLAGS) -D$(1) -MMD -MP -MF$$(@:%o=%d) -MT$$(@:%o=%d) -c -o $$@ $$<
 
 $$(ASM_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.S Makefile $(OBJ) $(BIN)
 	$(CC) $(ASFLAGS) -D$(1) -c -o $$@ $$<
@@ -241,6 +244,6 @@ ram :
 $(foreach MEMORY, $(MEMORIES), $(eval $(call RULES,$(MEMORY))))
 
 clean:
-	-rm -f $(OBJ)/*.o $(BIN)/*.bin $(BIN)/*.elf flash.log cmd.gdb
+	-rm -f $(OBJ)/*.o $(OBJ)/*.d $(BIN)/*.bin $(BIN)/*.elf $(BIN)/*.map flash.log cmd.gdb
 
 
