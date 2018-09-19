@@ -3,6 +3,11 @@
 
 # ISIS
 hal
+at91/include/at91/boards/
+at91/lib/
+at91/linker-scripts/
+at91/src/boards/
+
 
 
 # Emacs
