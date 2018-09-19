@@ -54,9 +54,9 @@
 //         Headers
 //-----------------------------------------------------------------------------
 
-#include "USBGenericDescriptor.h"
-#include "USBInterfaceDescriptor.h"
-#include "USBEndpointDescriptor.h"
+#include "at91/usb/common/core/USBGenericDescriptor.h"
+#include "at91/usb/common/core/USBInterfaceDescriptor.h"
+#include "at91/usb/common/core/USBEndpointDescriptor.h"
 
 //-----------------------------------------------------------------------------
 //         Definitions

@@ -31,10 +31,10 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBDCallbacks.h"
-#include "USBD.h"
-#include <board.h>
-#include <irq/irq.h>
+#include "at91/usb/device/core/USBDCallbacks.h"
+#include "at91/usb/device/core/USBD.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/peripherals/aic/aic.h"
 
 //------------------------------------------------------------------------------
 //         Exported function
@@ -46,20 +46,15 @@
 //------------------------------------------------------------------------------
 void USBDCallbacks_Initialized(void)
 {
-#if defined(CHIP_USB_UDP)
+#if defined(BOARD_USB_UDP)
     // Configure and enable the UDP interrupt
-    IRQ_ConfigureIT(AT91C_ID_UDP, 0, USBD_IrqHandler);
-    IRQ_EnableIT(AT91C_ID_UDP);
+    AIC_ConfigureIT(AT91C_ID_UDP, 0, USBD_InterruptHandler);
+    AIC_EnableIT(AT91C_ID_UDP);
 
-#elif defined(CHIP_USB_UDPHS)
+#elif defined(BOARD_USB_UDPHS)
     // Configure and enable the UDPHS interrupt
-    IRQ_ConfigureIT(AT91C_ID_UDPHS, 0, USBD_IrqHandler);
-    IRQ_EnableIT(AT91C_ID_UDPHS);
-
-#elif defined(CHIP_USB_OTGHS)
-    IRQ_ConfigureIT(AT91C_ID_OTGHS, 1, (void*) 0);
-    IRQ_EnableIT(AT91C_ID_OTGHS);
-
+    AIC_ConfigureIT(AT91C_ID_UDPHS, 0, USBD_InterruptHandler);
+    AIC_EnableIT(AT91C_ID_UDPHS);
 #else
     #error Unsupported controller.
 #endif

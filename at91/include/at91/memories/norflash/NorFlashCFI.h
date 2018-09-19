@@ -56,7 +56,7 @@
 
 
 /// Indicates the maximum region for norflash device.
-#define NORFLASH_MAXNUMRIGONS 4
+#define NORFLASH_MAXNUMREGIONS 4
 /// Indicates the NorFlash uses an 8-bit address bus.
 #define FLASH_CHIP_WIDTH_8BITS  0x01
 /// Indicates the NorFlash uses an 16-bit address bus.
@@ -140,7 +140,7 @@ struct NorFlashCfiDeviceGeometry {
     /// Number of erase block regions.
     unsigned char numEraseRegion;
     /// Erase block Region information.
-    struct EraseRegionInfo eraseRegionInfo[16];
+    struct EraseRegionInfo eraseRegionInfo[2];
 }__attribute__ ((packed));
 
 #ifdef __ICCARM__          // IAR

@@ -30,10 +30,11 @@
 //------------------------------------------------------------------------------
 //         Headers
 //------------------------------------------------------------------------------
-#include "NorFlashApi.h"
-#include "NorFlashCommon.h"
-#include <utility/math.h>
-#include <utility/trace.h>
+#include "at91/memories/norflash/NorFlashApi.h"
+#include "at91/memories/norflash/NorFlashCommon.h"
+#include "at91/utility/math.h"
+#include "at91/utility/trace.h"
+
 #include <string.h>
 
 //------------------------------------------------------------------------------
@@ -125,19 +126,12 @@ unsigned char NORFLASH_ReadData(
     unsigned char busWidth;
     unsigned int i;
     busWidth = NorFlash_GetDataBusWidth(&(pNorFlash->norFlashInfo));
-    
     busAddress = NorFlash_GetAddressInChip(&(pNorFlash->norFlashInfo), address);
-    if ((busWidth / 8 ) == FLASH_CHIP_WIDTH_16BITS ){ 
-        size = (size + 1) >> 1;
-    }
-    if ((busWidth/8) == FLASH_CHIP_WIDTH_32BITS ){ 
-        size = (size + 3) >> 2;
-    }
-    for(i = 0; i < size; i++) {
+    size /= (busWidth / 8);
+    for(i=0; i < size; i++) {
         ReadRawData(busWidth, busAddress, buffer);
         buffer+= (busWidth / 8);
         busAddress+= (busWidth / 8);
-
     }
     return 0;
 }

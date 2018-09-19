@@ -31,7 +31,9 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "tc.h"
+#include "at91/peripherals/tc/tc.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/peripherals/pio/pio.h"
 
 //------------------------------------------------------------------------------
 //         Global Functions
@@ -41,12 +43,16 @@
 /// Configures a Timer Counter to operate in the given mode. Timer is stopped
 /// after configuration and must be restarted with TC_Start(). All the
 /// interrupts of the timer are also disabled.
+/// User must assign the necessary pins at PIO themselves.
+/// User must also enable the peripheral at PMC themselves.
 /// \param pTc  Pointer to an AT91S_TC instance.
 /// \param mode  Operating mode (TC_CMR value).
 //------------------------------------------------------------------------------
 void TC_Configure(AT91S_TC *pTc, unsigned int mode)
 {
-    // Disable TC clock
+	//const Pin tcPins[] = PINS_TC;
+	
+	// Disable TC clock
     pTc->TC_CCR = AT91C_TC_CLKDIS;
 
     // Disable interrupts
@@ -54,6 +60,9 @@ void TC_Configure(AT91S_TC *pTc, unsigned int mode)
 
     // Clear status register
     pTc->TC_SR;
+
+    // Assign Pins to the TC at PIO
+    //PIO_Configure(tcPins, PIO_LISTSIZE(tcPins)); // Not all TC pins are used. PWM.c only uses PIN_TC_TIOA0, PIN_TC_TIOA1, PIN_TC_TIOB0, PIN_TC_TIOB1
 
     // Set mode
     pTc->TC_CMR = mode;
@@ -96,16 +105,14 @@ unsigned char TC_FindMckDivisor(
     unsigned int *div,
     unsigned int *tcclks)
 {
-    unsigned int index = 0;
-    unsigned int divisors[5] = {2, 8, 32, 128,
-#if defined(at91sam9260) || defined(at91sam9261) || defined(at91sam9g10) || defined(at91sam9263) \
-    || defined(at91sam9xe) || defined(at91sam9rl64) || defined(at91cap9) \
-    || defined(at91sam9m10) || defined(at91sam9g45) || defined(at91sam9m11) || defined(at91sam3u4)
-        0};
-    divisors[4] = mck / 32768;
+    const unsigned int divisors[5] = {2, 8, 32, 128,
+#if defined(at91sam9260) || defined(at91sam9261) || defined(at91sam9263) \
+    || defined(at91sam9xe) || defined(at91sam9rl64) || defined(at91cap9)
+        BOARD_MCK / 32768};
 #else
         1024};
 #endif
+    unsigned int index = 0;
 
     // Satisfy lower bound
     while (freq < ((mck / divisors[index]) / 65536)) {

@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBInterfaceRequest.h"
+#include "at91/usb/common/core/USBInterfaceRequest.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

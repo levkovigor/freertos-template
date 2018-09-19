@@ -42,7 +42,6 @@
 #ifndef USBDEVICEDESCRIPTOR_H
 #define USBDEVICEDESCRIPTOR_H
 
-#include <board.h>
 //------------------------------------------------------------------------------
 //         Definitions
 //------------------------------------------------------------------------------
@@ -103,19 +102,6 @@ typedef struct {
    unsigned char bNumConfigurations;
 
 } __attribute__ ((packed)) USBDeviceDescriptor; // GCC
-
-#if defined(CHIP_USB_OTGHS)
-typedef struct {
-
-   /// Size of this descriptor in bytes.
-   unsigned char bLength;
-   /// Descriptor type (USBGenericDescriptor_OTG).
-   unsigned char bDescriptorType;
-   /// Attribute Fields D7…2: Reserved D1: HNP support D0: SRP support
-   unsigned char bmAttributes;
-
-} __attribute__ ((packed)) USBOtgDescriptor; // GCC
-#endif
 
 #ifdef __ICCARM__          // IAR
 #pragma pack()             // IAR

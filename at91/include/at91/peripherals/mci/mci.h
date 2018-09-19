@@ -32,18 +32,9 @@
 ///
 /// !Purpose
 ///  
-/// This file provides a basic API for MCI configuration and send command from host through MCI. 
-/// User can control device such as SD memory card, SDIO, MMC card through these interface. 
+/// mci-interface driver
 ///
 /// !Usage
-///
-/// -# Use MCI_Init() to initialize MCI controller.
-/// -# Use MCI_SetSpeed() to set the MCI clock.
-/// -# Use MCI_SetBusWidth() to set the bus width between MCI controller and device.
-/// -# MCI_SendCommand() is used for host to send command to device through MCI interface.
-/// -# MCI_Handler() is the interrupt service routine.
-///
-/// !Functions
 ///
 /// -# MCI_Init: Initializes a MCI driver instance and the underlying peripheral.
 /// -# MCI_SetSpeed : Configure the  MCI CLKDIV in the MCI_MR register.
@@ -60,7 +51,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <board.h>
+#include "at91/boards/ISIS_OBC_G20/board.h"
 
 //------------------------------------------------------------------------------
 //         Constants
@@ -77,47 +68,23 @@
 #define MCI_ERROR_LOCK    1
 
 /// MCI configuration with 1-bit data bus on slot A (for MMC cards).
-#define MCI_MMC_SLOTA           (AT91C_MCI_SCDSEL_SLOTA | AT91C_MCI_SCDBUS_1BIT)
-/// MCI configuration with 4-bit data bus on slot A (for SD cards).
-#define MCI_SD_SLOTA            (AT91C_MCI_SCDSEL_SLOTA | AT91C_MCI_SCDBUS_4BITS)
-#ifdef AT91C_MCI_SCDBUS_8BITS
-/// MCI configuration with 1-bit data bus on slot A (for MMC cards).
-#define MCI_MMC4_SLOTA          (AT91C_MCI_SCDSEL_SLOTA | AT91C_MCI_SCDBUS_8BITS)
-#endif
-#ifdef AT91C_MCI_SCDSEL_SLOTB
+#define MCI_MMC_SLOTA	        0
 /// MCI configuration with 1-bit data bus on slot B (for MMC cards).
-#define MCI_MMC_SLOTB           (AT91C_MCI_SCDSEL_SLOTB | AT91C_MCI_SCDBUS_1BIT)
+#define MCI_MMC_SLOTB	        1
+/// MCI configuration with 4-bit data bus on slot A (for SD cards).
+#define MCI_SD_SLOTA	        AT91C_MCI_SCDBUS
 /// MCI configuration with 4-bit data bus on slot B (for SD cards).
-#define MCI_SD_SLOTB            (AT91C_MCI_SCDSEL_SLOTB | AT91C_MCI_SCDBUS_4BITS)
-#ifdef AT91C_MCI_SCDBUS_8BITS
-/// MCI configuration with 1-bit data bus on slot A (for MMC cards).
-#define MCI_MMC4_SLOTB          (AT91C_MCI_SCDSEL_SLOTB | AT91C_MCI_SCDBUS_8BITS)
-#endif
-#else
-#define MCI_MMC_SLOTB           MCI_MMC_SLOTA
-#define MCI_SD_SLOTB            MCI_SD_SLOTA
-#endif
+#define MCI_SD_SLOTB	        (AT91C_MCI_SCDBUS | 1)
 
 /// Start new data transfer
 #define MCI_NEW_TRANSFER        0
 /// Continue data transfer
 #define MCI_CONTINUE_TRANSFER   1
-/// Stop data transfer
-#define MCI_STOP_TRANSFER       2
-
 
 /// MCI SD Bus Width 1-bit
 #define MCI_SDCBUS_1BIT (0 << 7)
 /// MCI SD Bus Width 4-bit
 #define MCI_SDCBUS_4BIT (1 << 7)
-/// MCI SD Bus Width 8-bit
-#define MCI_SDCBUS_8BIT (3 << 6)
-
-/// The MCI Clock Speed after initialize (400K)
-#define MCI_INITIAL_SPEED       400000
-
-#define MCI_INTERRUPT_MODE 0
-#define MCI_POLLING_MODE   1
 
 //------------------------------------------------------------------------------
 //         Types
@@ -133,34 +100,31 @@ typedef void (*MciCallback)(unsigned char status, void *pCommand);
 //------------------------------------------------------------------------------
 typedef struct _MciCmd {
 
+    /// Command status.
+	volatile char status;
     /// Command code.
-    unsigned int cmd;
+	unsigned int cmd;
     /// Command argument.
-    unsigned int arg;
+	unsigned int arg;
     /// Data buffer.
-    unsigned char *pData;
-    /// Size of data block in bytes.
-    unsigned short blockSize;
-    /// Number of blocks to be transfered
-    unsigned short nbBlock;
+	unsigned char *pData;
+    /// Size of data buffer in bytes.
+	unsigned short blockSize;
+	/// Number of blocks to be transfered
+	unsigned short nbBlock;
+	/// Indicate if continue to transfer data
+	unsigned char conTrans;
+    /// Indicates if the command is a read operation.
+	unsigned char isRead;
     /// Response buffer.
     unsigned int  *pResp;
-    /// Optional user-provided callback function.
-    MciCallback callback;
-    /// Optional argument to the callback function.
-    void *pArg;
-
     /// SD card response type.
-    unsigned char  resType;
-    /// Indicate if there is data transfer
-    unsigned char dataTran;
-    /// Indicate if continue to transfer data
-    unsigned char tranType;
-    /// Indicates if the command is a read operation.
-    unsigned char isRead;
+	unsigned char  resType;
+	/// Optional user-provided callback function.
+	MciCallback callback;
+    /// Optional argument to the callback function.
+	void *pArg;
 
-    /// Command status.
-    volatile int status;
 } MciCmd;
 
 //------------------------------------------------------------------------------
@@ -170,17 +134,14 @@ typedef struct _MciCmd {
 typedef struct {
 
     /// Pointer to a MCI peripheral.
-    AT91S_MCI *pMciHw;
-    /// Pointer to currently executing command.
-    MciCmd *pCommand;
+	AT91S_MCI *pMciHw;
     /// MCI peripheral identifier.
     unsigned char mciId;
-    /// MCI HW support mode
-    unsigned char mciMode;
-    /// Mutex.
-    volatile char semaphore;
-    /// interrupt or polling mode
-    unsigned int bPolling;
+    /// Pointer to currently executing command.
+	MciCmd *pCommand;
+	/// Mutex.
+	volatile char semaphore;
+
 } Mci;
 
 //------------------------------------------------------------------------------
@@ -191,27 +152,19 @@ extern void MCI_Init(
     Mci *pMci,
     AT91PS_MCI pMciHw,
     unsigned char mciId,
-    unsigned int mode,
-    unsigned int bPolling);
+    unsigned int mode);
 
-extern unsigned int MCI_GetSpeed(Mci *pMci, unsigned int *mciDiv);
-
-extern unsigned int MCI_SetSpeed(Mci *pMci,
-                                 unsigned int mciSpeed,
-                                 unsigned int mciLimit,
-                                 unsigned int mck);
+extern void MCI_SetSpeed(Mci *pMci, unsigned int mciSpeed);
 
 extern unsigned char MCI_SendCommand(Mci *pMci, MciCmd *pMciCmd);
 
 extern void MCI_Handler(Mci *pMci);
 
-extern unsigned char MCI_IsTxComplete(Mci *pMci);
+extern unsigned char MCI_IsTxComplete(MciCmd *pMciCmd);
 
 extern unsigned char MCI_CheckBusy(Mci *pMci);
 
 extern void MCI_Close(Mci *pMci);
-
-extern void MCI_EnableHsMode(Mci * pMci, unsigned char hsEnable);
 
 extern void MCI_SetBusWidth(Mci *pMci, unsigned char busWidth);
 

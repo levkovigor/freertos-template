@@ -31,8 +31,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <at91/peripherals/aic/aic.h>
-#include <board.h>
+#include "at91/peripherals/aic/aic.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
 
 //------------------------------------------------------------------------------
 //         Global functions

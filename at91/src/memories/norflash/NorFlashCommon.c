@@ -30,9 +30,9 @@
 //------------------------------------------------------------------------------
 //         Headers
 //------------------------------------------------------------------------------
-#include "NorFlashCommon.h"
+#include "at91/memories/norflash/NorFlashCommon.h"
+#include "at91/utility/trace.h"
 
-#include <utility/trace.h>
 #include <string.h>
 
 //------------------------------------------------------------------------------

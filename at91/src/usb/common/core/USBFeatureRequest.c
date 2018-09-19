@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBFeatureRequest.h"
+#include "at91/usb/common/core/USBFeatureRequest.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

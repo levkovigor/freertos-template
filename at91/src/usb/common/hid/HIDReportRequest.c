@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "HIDReportRequest.h"
+#include "at91/usb/common/hid/HIDReportRequest.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

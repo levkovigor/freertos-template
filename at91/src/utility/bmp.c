@@ -31,9 +31,9 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "bmp.h"
-#include <board.h>
-#include <utility/trace.h>
+#include "at91/utility/bmp.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/utility/trace.h"
 
 #include <string.h>
 
@@ -111,6 +111,8 @@ void WriteBMPheader(unsigned int* pAddressHeader,
     unsigned int* fill;
     struct BMPHeader *Header;
 
+    (void)bmpRgb;
+
     fill = pAddressHeader;
     for (i=0; i<IMAGE_OFFSET; i+=4) {
         *fill++ = 0;
@@ -164,6 +166,8 @@ void BMP_displayHeader(unsigned int* pAddressHeader)
     TRACE_INFO("yresolution %d \n\r", header->yresolution);
     TRACE_INFO("ncolours    %d \n\r", header->ncolours);
     TRACE_INFO("importantcolours %d\n\r", header->importantcolours);
+
+    (void)header;
 }
 
 
@@ -247,10 +251,7 @@ unsigned char BMP_Decode(
                 buffer[(i * width + j) * 3] = b;
                 buffer[(i * width + j) * 3 + 1] = g;
                 buffer[(i * width + j) * 3 + 2] = r;
-#elif defined(BOARD_LCD_BGR565)                
-                buffer[(i * width + j) * 3] = b;
-                buffer[(i * width + j) * 3 + 1] = g;
-                buffer[(i * width + j) * 3 + 2] = r;                
+
 #else
                 buffer[(i * width + j) * 3] = r;
                 buffer[(i * width + j) * 3 + 1] = g;

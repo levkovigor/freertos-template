@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBGetDescriptorRequest.h"
+#include "at91/usb/common/core/USBGetDescriptorRequest.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

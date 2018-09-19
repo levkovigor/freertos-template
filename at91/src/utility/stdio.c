@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- *         ATMEL Microcontroller Software Support 
+ *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2008, Atmel Corporation
  *
@@ -46,15 +46,19 @@
 //         Headers
 //------------------------------------------------------------------------------
 
+#include "at91/commons.h"
+
 #include <stdio.h>
 #include <stdarg.h>
+
+#if USE_AT91LIB_STDIO_AND_STRING
 
 //------------------------------------------------------------------------------
 //         Local Definitions
 //------------------------------------------------------------------------------
 
 // Maximum string size allowed (in bytes).
-#define MAX_STRING_SIZE         128
+#define MAX_PRINTF_STRING_SIZE         1024
 
 //------------------------------------------------------------------------------
 //         Global Variables
@@ -178,7 +182,7 @@ signed int PutSignedInt(
     if ((absolute / 10) > 0) {
 
         if (value < 0) {
-        
+
             num = PutSignedInt(pStr, fill, width, -(absolute / 10));
         }
         else {
@@ -217,6 +221,132 @@ signed int PutSignedInt(
 
     return num;
 }
+
+#ifndef DISABLE_FLOAT_PRINTFS
+// Akhil: Implemented missing PutDouble using PutSignedInt for characteristic and PutUnsignedInt for mantessa.
+//------------------------------------------------------------------------------
+// Writes a floating point number inside the given string, using the provided fill & width parameters.
+// Only accurate to three decimal places.
+// Returns the size of the written number.
+// \param pStr  Storage string.
+// \param fill  Fill character.
+// \param width  Minimum width.
+// \param value  Double value.
+//------------------------------------------------------------------------------
+signed int PutDouble(char *pStr, char fill, signed int width, double value) {
+	signed int num;
+	signed int characteristic;
+	signed int absoluteCharacteristic;
+	unsigned int mantissa, temp;
+	double absolute;
+
+	if(value>2147483.647 || value<(-2147483.647)) {
+		return PutString(pStr, "F_OUT_RNG");
+	}
+
+	characteristic = (signed int)(value*1000);
+	characteristic = characteristic / 1000;
+
+    if (value < 0.0000000) {
+        absolute = -value;
+        absoluteCharacteristic = -characteristic;
+    }
+    else {
+        absolute = value;
+        absoluteCharacteristic = characteristic;
+    }
+
+    if(width > 4) {
+    	width -= 4;
+    }
+
+    temp = (unsigned int)(absolute * 1000);
+    mantissa = temp - absoluteCharacteristic*1000;
+
+    if(((absolute*10000)-((double)temp)*10) > 5.0) {
+    	mantissa++;
+    }
+
+	num  = PutSignedInt(pStr, fill, width, characteristic);
+	num += PutChar(pStr+num, '.');
+	num += PutUnsignedInt(pStr+num, '0', 3, mantissa);
+
+	return num;
+}
+
+// Akhil: Implemented missing PutExponential using PutDouble and PutUnsignedInt.
+//------------------------------------------------------------------------------
+// Writes a floating point number inside the given string in its exponential form,
+// using the provided fill & width parameters.
+// Only accurate to three decimal places.
+// Returns the size of the written number.
+// \param pStr  Storage string.
+// \param fill  Fill character.
+// \param caps  Writes e in caps if non-zero.
+// \param width  Minimum width.
+// \param value  Double value.
+//------------------------------------------------------------------------------
+signed int PutExponential(char *pStr, char fill, unsigned int caps, signed int width, double value) {
+	signed int num, len;
+	signed int exponent = 0, absoluteExponent;
+	double absolute;
+	char temp[12] = {0};
+
+	if (value < 0.0000000) {
+		absolute = -value;
+	}
+	else {
+		absolute = value;
+	}
+
+	// Figure out the exponent
+	if(absolute >= 10) {
+		while(absolute >= 10) {
+			absolute /= 10;
+			value /= 10;
+			exponent++;
+		}
+	}
+	else if(absolute < 1) {
+		while(absolute < 1) {
+			absolute *= 10;
+			value *= 10;
+			exponent--;
+		}
+	}
+
+	// We need the absolute exponent so that we can always attach a sign to the exponent using PutUnsignedInt
+	if(exponent < 0) {
+		absoluteExponent = -exponent;
+	}
+	else {
+		absoluteExponent = exponent;
+	}
+
+	len = PutSignedInt(temp, 0, 0, exponent);
+
+    if(width > (len+2)) {
+    	width -= (len+2);
+    }
+
+	num = PutDouble(pStr, fill, width, value);
+	if(caps != 0) {
+		num += PutChar(pStr+num, 'E');
+	}
+	else {
+		num += PutChar(pStr+num, 'e');
+	}
+	if(exponent >= 0) {
+		num += PutChar(pStr+num, '+');
+	}
+	else {
+		num += PutChar(pStr+num, '-');
+	}
+	num += PutUnsignedInt(pStr+num, fill, 0, absoluteExponent);
+
+	return num;
+}
+#endif // #ifndef DISABLE_FLOAT_PRINTFS
 
 //------------------------------------------------------------------------------
 // Writes an hexadecimal value into a string, using the given fill, width &
@@ -334,7 +464,7 @@ signed int vsnprintf(char *pStr, size_t length, const char *pFormat, va_list ap)
 
             // Parse width
             while ((*pFormat >= '0') && (*pFormat <= '9')) {
-        
+
                 width = (width*10) + *pFormat-'0';
                 pFormat++;
             }
@@ -344,16 +474,24 @@ signed int vsnprintf(char *pStr, size_t length, const char *pFormat, va_list ap)
 
                 width = length - size;
             }
-        
+
             // Parse type
             switch (*pFormat) {
-            case 'd': 
+            case 'd':
             case 'i': num = PutSignedInt(pStr, fill, width, va_arg(ap, signed int)); break;
             case 'u': num = PutUnsignedInt(pStr, fill, width, va_arg(ap, unsigned int)); break;
             case 'x': num = PutHexa(pStr, fill, width, 0, va_arg(ap, unsigned int)); break;
             case 'X': num = PutHexa(pStr, fill, width, 1, va_arg(ap, unsigned int)); break;
             case 's': num = PutString(pStr, va_arg(ap, char *)); break;
             case 'c': num = PutChar(pStr, va_arg(ap, unsigned int)); break;
+#ifndef DISABLE_FLOAT_PRINTFS
+            case 'e': num = PutExponential(pStr, fill, 0, width, va_arg(ap, double)); break;
+            case 'E': num = PutExponential(pStr, fill, 1, width, va_arg(ap, double)); break;
+            case 'f':
+            case 'F':
+            case 'g':
+            case 'G': num = PutDouble(pStr, fill, width, va_arg(ap, double)); break;
+#endif
             default:
                 return EOF;
             }
@@ -409,7 +547,7 @@ signed int snprintf(char *pString, size_t length, const char *pFormat, ...)
 //------------------------------------------------------------------------------
 signed int vsprintf(char *pString, const char *pFormat, va_list ap)
 {
-    return vsnprintf(pString, MAX_STRING_SIZE, pFormat, ap);
+    return vsnprintf(pString, MAX_PRINTF_STRING_SIZE, pFormat, ap);
 }
 
 //------------------------------------------------------------------------------
@@ -421,11 +559,11 @@ signed int vsprintf(char *pString, const char *pFormat, va_list ap)
 //------------------------------------------------------------------------------
 signed int vfprintf(FILE *pStream, const char *pFormat, va_list ap)
 {
-    char pStr[MAX_STRING_SIZE];
+    char pStr[MAX_PRINTF_STRING_SIZE];
     char pError[] = "stdio.c: increase MAX_STRING_SIZE\n\r";
 
     // Write formatted string in buffer
-    if (vsprintf(pStr, pFormat, ap) >= MAX_STRING_SIZE) {
+    if (vsprintf(pStr, pFormat, ap) >= MAX_PRINTF_STRING_SIZE) {
 
         fputs(pError, stderr);
         while (1); // Increase MAX_STRING_SIZE
@@ -509,4 +647,6 @@ signed int puts(const char *pStr)
 {
     return fputs(pStr, stdout);
 }
+
+#endif // #if USE_AT91LIB_STDIO_AND_STRING
 

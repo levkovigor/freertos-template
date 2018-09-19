@@ -50,7 +50,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBGenericRequest.h"
+#include "at91/usb/common/core/USBGenericRequest.h"
 
 //------------------------------------------------------------------------------
 //         Definitions
@@ -91,17 +91,7 @@
 #define USBFeatureRequest_DEVICEREMOTEWAKEUP    1
 /// Test mode of the device.
 #define USBFeatureRequest_TESTMODE              2
-/// OTG set feature
-#define USBFeatureRequest_OTG                0x0B
 //------------------------------------------------------------------------------
-
-/// On The Go Feature Selectors
-/// b_hnp_enable      3
-/// a_hnp_support     4
-/// a_alt_hnp_support 5
-#define USBFeatureRequest_OTG_B_HNP_ENABLE      3
-#define USBFeatureRequest_OTG_A_HNP_SUPPORT     4
-#define USBFeatureRequest_OTG_A_ALT_HNP_SUPPORT 5
 
 //------------------------------------------------------------------------------
 /// \page "USB Test mode selectors"

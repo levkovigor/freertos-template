@@ -38,9 +38,9 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "HIDDMouseInputReport.h"
-#include "HIDDMouseDriverDescriptors.h"
-#include <utility/assert.h>
+#include "at91/usb/device/hid-mouse/HIDDMouseInputReport.h"
+#include "at91/usb/device/hid-mouse/HIDDMouseDriverDescriptors.h"
+#include "at91/utility/assert.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

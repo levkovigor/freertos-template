@@ -38,23 +38,23 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "HIDDMouseDriverDescriptors.h"
-#include "HIDDMouseInputReport.h"
-#include <board.h>
-#include <usb/common/core/USBDeviceDescriptor.h>
-#include <usb/common/core/USBConfigurationDescriptor.h>
-#include <usb/common/core/USBInterfaceDescriptor.h>
-#include <usb/common/core/USBEndpointDescriptor.h>
-#include <usb/common/core/USBStringDescriptor.h>
-#include <usb/common/hid/HIDGenericDescriptor.h>
-#include <usb/common/hid/HIDDeviceDescriptor.h>
-#include <usb/common/hid/HIDInterfaceDescriptor.h>
-#include <usb/common/hid/HIDDescriptor.h>
-#include <usb/common/hid/HIDReport.h>
-#include <usb/common/hid/HIDGenericDesktop.h>
-#include <usb/common/hid/HIDLeds.h>
-#include <usb/common/hid/HIDButton.h>
-#include <usb/device/core/USBDDriverDescriptors.h>
+#include "at91/usb/device/hid-mouse/HIDDMouseDriverDescriptors.h"
+#include "at91/usb/device/hid-mouse/HIDDMouseInputReport.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/usb/common/core/USBDeviceDescriptor.h"
+#include "at91/usb/common/core/USBConfigurationDescriptor.h"
+#include "at91/usb/common/core/USBInterfaceDescriptor.h"
+#include "at91/usb/common/core/USBEndpointDescriptor.h"
+#include "at91/usb/common/core/USBStringDescriptor.h"
+#include "at91/usb/common/hid/HIDGenericDescriptor.h"
+#include "at91/usb/common/hid/HIDDeviceDescriptor.h"
+#include "at91/usb/common/hid/HIDInterfaceDescriptor.h"
+#include "at91/usb/common/hid/HIDDescriptor.h"
+#include "at91/usb/common/hid/HIDReport.h"
+#include "at91/usb/common/hid/HIDGenericDesktop.h"
+#include "at91/usb/common/hid/HIDLeds.h"
+#include "at91/usb/common/hid/HIDButton.h"
+#include "at91/usb/device/core/USBDDriverDescriptors.h"
 
 //------------------------------------------------------------------------------
 //         Definitions
@@ -111,7 +111,7 @@ static const USBDeviceDescriptor deviceDescriptor = {
     HIDDeviceDescriptor_CLASS,
     HIDDeviceDescriptor_SUBCLASS,
     HIDDeviceDescriptor_PROTOCOL,
-    CHIP_USB_ENDPOINTS_MAXPACKETSIZE(0),
+    BOARD_USB_ENDPOINTS_MAXPACKETSIZE(0),
     HIDDMouseDriverDescriptors_VENDORID,
     HIDDMouseDriverDescriptors_PRODUCTID,
     HIDDMouseDriverDescriptors_RELEASE,
@@ -121,7 +121,7 @@ static const USBDeviceDescriptor deviceDescriptor = {
     1  // One possible configuration
 };
 
-#if defined (CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+#ifdef BOARD_USB_UDPHS
 /// Device qualifier descriptor (high-speed only).
 static const USBDeviceQualifierDescriptor qualifierDescriptor = {
 
@@ -130,7 +130,7 @@ static const USBDeviceQualifierDescriptor qualifierDescriptor = {
     HIDDeviceDescriptor_CLASS,
     HIDDeviceDescriptor_SUBCLASS,
     HIDDeviceDescriptor_PROTOCOL,
-    CHIP_USB_ENDPOINTS_MAXPACKETSIZE(0),
+    BOARD_USB_ENDPOINTS_MAXPACKETSIZE(0),
     1, // One possible configuration
     0 // Reserved
 };
@@ -185,7 +185,7 @@ static const HIDDMouseDriverConfigurationDescriptors configurationDescriptors = 
     }
 };
 
-#if defined (CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+#ifdef BOARD_USB_UDPHS
 /// Other-speed configuration descriptor.
 static const HIDDMouseDriverConfigurationDescriptors otherSpeedDescriptors = {
 
@@ -323,7 +323,7 @@ USBDDriverDescriptors hiddMouseDriverDescriptors = {
 
     &deviceDescriptor,
     (USBConfigurationDescriptor *) &configurationDescriptors,
-#if defined (CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+#ifdef BOARD_USB_UDPHS
     &qualifierDescriptor,
     (USBConfigurationDescriptor *) &otherSpeedDescriptors,
     &deviceDescriptor,

@@ -31,8 +31,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "math.h"
-#include "trace.h"
+#include "at91/utility/math.h"
+#include "at91/utility/trace.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

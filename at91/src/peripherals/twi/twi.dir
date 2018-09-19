@@ -31,5 +31,5 @@
 /// \dir
 /// !!!Purpose
 ///
-/// Contains the peripheral API for Two Wire Interface (TWI) controller.
+/// Contains the peripheral API for Two Wire Interface (TWI) controller used for I2C communication.
 //------------------------------------------------------------------------------

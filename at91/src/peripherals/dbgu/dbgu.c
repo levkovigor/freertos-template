@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- *         ATMEL Microcontroller Software Support 
+ *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2008, Atmel Corporation
  *
@@ -31,8 +31,10 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "dbgu.h"
-#include <board.h>
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/peripherals/dbgu/dbgu.h"
+
+#include <stdarg.h>
 
 //------------------------------------------------------------------------------
 //         Global functions
@@ -52,21 +54,16 @@ void DBGU_Configure(
     unsigned int baudrate,
     unsigned int mck)
 {
-    #if defined(cortexm3)
-    // Enable clock for UART
-    AT91C_BASE_PMC->PMC_PCER = (1 << AT91C_ID_DBGU);
-    #endif
-
     // Reset & disable receiver and transmitter, disable interrupts
     AT91C_BASE_DBGU->DBGU_CR = AT91C_US_RSTRX | AT91C_US_RSTTX;
     AT91C_BASE_DBGU->DBGU_IDR = 0xFFFFFFFF;
-    
+
     // Configure baud rate
     AT91C_BASE_DBGU->DBGU_BRGR = mck / (baudrate * 16);
-    
+
     // Configure mode register
     AT91C_BASE_DBGU->DBGU_MR = mode;
-    
+
     // Disable DMA channel
     AT91C_BASE_DBGU->DBGU_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
 
@@ -81,14 +78,27 @@ void DBGU_Configure(
 //------------------------------------------------------------------------------
 void DBGU_PutChar(unsigned char c)
 {
+	/*
+	 * US_TXEMPTY is not a blocking register. The UART shift register will shift
+	 * the contents out regardless. No need to add watchdog kick. However, might
+	 * be good idea to add a normal "for loop" timeout counter just to be safe.
+	 *
+	 * int timeout;
+	 * for( timeout = 1000000; timeout != 0; timeout-- );
+	 */
+
     // Wait for the transmitter to be ready
-    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0);
-    
+    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0) {
+//    	WDT_kickEveryNcalls(40000);
+    }
+
     // Send character
     AT91C_BASE_DBGU->DBGU_THR = c;
-    
+
     // Wait for the transfer to complete
-    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0);
+    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0) {
+//    	WDT_kickEveryNcalls(40000);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -106,9 +116,94 @@ unsigned int DBGU_IsRxReady()
 //------------------------------------------------------------------------------
 unsigned char DBGU_GetChar(void)
 {
-    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_RXRDY) == 0);
+    while ((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_RXRDY) == 0)
+    {
+//#ifdef norflash
+//    	WDT_kickEveryNcalls(8000);
+//#else
+//    	WDT_kickEveryNcalls(40000);
+//#endif
+
+    	/*
+    	 * If the user properly checked DBGU_IsRxRead() before calling this
+    	 * function, there is no need to add timeout here. You could even argue
+    	 * that you would want the watchdog to trigger, alerting the user to
+    	 * this fact.
+    	 */
+    }
+
     return AT91C_BASE_DBGU->DBGU_RHR;
 }
 
+/*
+ * DBGU_GetCharTimeout(...) adds a lot of dependencies (HAL & FreeRTOS). By
+ * rather using DBG_IsRxReady() together with DBGU_GetChar(), the user can
+ * recreate this functionality in an upper layer.
+ */
 
+#ifndef NOFPUT
+#include <stdio.h>
+
+//------------------------------------------------------------------------------
+/// \exclude
+/// Implementation of fputc using the DBGU as the standard output. Required
+/// for printf().
+/// \param c  Character to write.
+/// \param pStream  Output stream.
+/// \param The character written if successful, or -1 if the output stream is
+/// not stdout or stderr.
+//------------------------------------------------------------------------------
+signed int fputc(signed int c, FILE *pStream)
+{
+    if ((pStream == stdout) || (pStream == stderr)) {
+
+        DBGU_PutChar(c);
+        return c;
+    }
+    else {
+
+        return EOF;
+    }
+}
+
+//------------------------------------------------------------------------------
+/// \exclude
+/// Implementation of fputs using the DBGU as the standard output. Required
+/// for printf(). Does NOT currently use the PDC.
+/// \param pStr  String to write.
+/// \param pStream  Output stream.
+/// \return Number of characters written if successful, or -1 if the output
+/// stream is not stdout or stderr.
+//------------------------------------------------------------------------------
+signed int fputs(const char *pStr, FILE *pStream)
+{
+    signed int num = 0;
+
+    while (*pStr != 0) {
+
+        if (fputc(*pStr, pStream) == -1) {
+
+            return -1;
+        }
+        num++;
+        pStr++;
+    }
+
+    return num;
+}
+
+#undef putchar
+
+//------------------------------------------------------------------------------
+/// \exclude
+/// Outputs a character on the DBGU.
+/// \param c  Character to output.
+/// \return The character that was output.
+//------------------------------------------------------------------------------
+signed int putchar(signed int c)
+{
+    return fputc(c, stdout);
+}
+
+#endif //#ifndef NOFPUT
 

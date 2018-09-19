@@ -45,9 +45,6 @@
 /// inside the peripheral itself.
 //------------------------------------------------------------------------------
 
-
-/* PATCHED TO MATCH ISIS directory structure */
-
 #ifndef AIC_H
 #define AIC_H
 
@@ -55,7 +52,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <board.h>
+#include "at91/boards/ISIS_OBC_G20/board.h"
 
 //------------------------------------------------------------------------------
 //         Definitions

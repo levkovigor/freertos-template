@@ -49,19 +49,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <board.h>
-#include <memories/Media.h>
-#include <usb/common/core/USBEndpointDescriptor.h>
-#include <usb/common/core/USBGenericRequest.h>
-
-//------------------------------------------------------------------------------
-//      Compile Options
-//------------------------------------------------------------------------------
-
-/// Compile option for HS or OTG, use DMA. Remove this define for not use DMA.
-#if defined(CHIP_USB_OTGHS) || defined(CHIP_USB_UDPHS)
-#define DMA
-#endif
+#include "at91/usb/common/core/USBEndpointDescriptor.h"
+#include "at91/usb/common/core/USBGenericRequest.h"
 
 //------------------------------------------------------------------------------
 //      Definitions
@@ -86,14 +75,6 @@
 #define USBD_STATUS_ABORTED             2
 /// Operation has been aborted because the device has been reset.
 #define USBD_STATUS_RESET               3
-/// Part ot operation successfully done.
-#define USBD_STATUS_PARTIAL_DONE        4
-/// Operation failed because parameter error
-#define USBD_STATUS_INVALID_PARAMETER   5
-/// Operation failed because in unexpected state
-#define USBD_STATUS_WRONG_STATE         6
-/// Operation failed because HW not supported
-#define USBD_STATUS_HW_NOT_SUPPORTED    0xFE
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -146,49 +127,6 @@
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-/// Buffer struct used for multi-buffer-listed transfer.
-/// The driver can process 255 bytes of buffers or buffer list window.
-//------------------------------------------------------------------------------
-typedef struct _USBDTransferBuffer {
-    /// Pointer to frame buffer
-    unsigned char * pBuffer;
-    /// Size of the frame (up to 64K-1)
-    unsigned short size;
-    /// Bytes transferred
-    unsigned short transferred;
-    /// Bytes in FIFO
-    unsigned short buffered;
-    /// Bytes remaining
-    unsigned short remaining;
-} USBDTransferBuffer;
-
-#ifdef __ICCARM__          // IAR
-#define __attribute__(...) // IAR
-#endif                     // IAR
-
-//------------------------------------------------------------------------------
-/// Struct used for USBD DMA Link List Transfer Descriptor, must be 16-bytes
-/// aligned.
-/// (For USB, DMA transfer is linked to EPs and FIFO address is EP defined)
-//------------------------------------------------------------------------------
-typedef struct _USBDDmaDescriptor {
-    /// Pointer to Next Descriptor
-    void* pNxtDesc;
-    /// Pointer to data buffer address
-    void* pDataAddr;
-    /// DMA Control setting register value
-    unsigned int   ctrlSettings:8,  /// Control settings
-                   reserved:8,      /// Not used
-                   bufferLength:16; /// Length of buffer
-    /// Loaded to DMA register, OK to modify
-    unsigned int used;
-} __attribute__((aligned(16))) USBDDmaDescriptor;
-
-#ifdef __ICCARM__          // IAR
-#pragma pack()             // IAR
-#endif                     // IAR
-
-//------------------------------------------------------------------------------
 /// Callback used by transfer functions (USBD_Read & USBD_Write) to notify
 /// that a transaction is complete.
 //------------------------------------------------------------------------------
@@ -198,25 +136,12 @@ typedef void (*TransferCallback)(void *pArg,
                                  unsigned int remaining);
 
 //------------------------------------------------------------------------------
-/// Callback used by MBL transfer functions (USBD_Read & USBD_Write) to notify
-/// that a transaction is complete.
-/// \param pArg     Pointer to callback arguments.
-/// \param status   USBD status.
-/// \param nbFreed  Number of buffers that is freed since last callback.
-//------------------------------------------------------------------------------
-typedef void (*MblTransferCallback)(void *pArg,
-                                    unsigned char status,
-                                    unsigned int nbFreed);
-
-//------------------------------------------------------------------------------
 //         Exported functions
 //------------------------------------------------------------------------------
 
-extern void USBD_IrqHandler(void);
+extern void USBD_InterruptHandler(void);
 
 extern void USBD_Init(void);
-
-extern void USBD_ConfigureSpeed(unsigned char forceFS);
 
 extern void USBD_Connect(void);
 
@@ -228,20 +153,6 @@ extern char USBD_Write(
     unsigned int size,
     TransferCallback callback,
     void *pArg);
-
-extern char USBD_MblWrite(
-    unsigned char bEndpoint,
-    void * pMbl,
-    unsigned short wListSize,
-    unsigned char bCircList,
-    unsigned short wStartNdx,
-    MblTransferCallback fCallback,
-    void * pArgument);
-
-extern char USBD_MblReuse(
-    unsigned char bEndpoint,
-    unsigned char * pNewBuffer,
-    unsigned short wNewSize);
 
 extern char USBD_Read(
     unsigned char bEndpoint,

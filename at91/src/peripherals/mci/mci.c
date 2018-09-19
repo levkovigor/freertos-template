@@ -31,9 +31,9 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "mci.h"
-#include <utility/assert.h>
-#include <utility/trace.h>
+#include "at91/peripherals/mci/mci.h"
+#include "at91/utility/assert.h"
+#include "at91/utility/trace.h"
 
 //------------------------------------------------------------------------------
 //         Local constants
@@ -82,59 +82,6 @@
 /// Used to read from MCI registers.
 #define READ_MCI(pMci, regName)             (pMci->regName)
 
-/// Enable MCI Peripheral
-#define PERIPH_ENABLE(mciId)   WRITE_PMC(AT91C_BASE_PMC, PMC_PCER, (1 << mciId))
-/// Disable MCI Peripheral
-#define PERIPH_DISABLE(mciId)  WRITE_PMC(AT91C_BASE_PMC, PMC_PCDR, (1 << mciId))
-
-/// Enable MCI
-#define MCI_ENABLE(pMciHw)     WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIEN)
-/// Disable MCI
-#define MCI_DISABLE(pMciHw)    WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS)
-/// Reset MCI
-#define MCI_RESET(pMciHw)      WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_SWRST)
-
-//------------------------------------------------------------------------------
-//         Internal functions
-//------------------------------------------------------------------------------
-/*
-//------------------------------------------------------------------------------
-/// Reset MCI interface and disable it.
-/// \param keepSettings Keep old register settings, including _MR, _SDCR, _DTOR
-//------------------------------------------------------------------------------
-static void MCI_Reset(AT91PS_MCI pMciHw, unsigned char keepSettings)
-{
-    if (keepSettings) {
-
-        unsigned int mciMr, mciSdcr, mciDtor;
-
-        mciMr = READ_MCI(pMciHw, MCI_MR);
-        mciSdcr = READ_MCI(pMciHw, MCI_SDCR);
-        mciDtor = READ_MCI(pMciHw, MCI_DTOR);
-
-        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_SWRST);
-
-        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS | AT91C_MCI_PWSDIS);
-        WRITE_MCI(pMciHw, MCI_MR, mciMr);
-        WRITE_MCI(pMciHw, MCI_SDCR, mciSdcr);
-        WRITE_MCI(pMciHw, MCI_DTOR, mciDtor);
-    }
-    else {
-
-        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_SWRST);
-        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS | AT91C_MCI_PWSDIS);
-    }
-}
-*/
-
-//------------------------------------------------------------------------------
-/// Delay some loop
-//------------------------------------------------------------------------------
-static void Delay(volatile unsigned int loop)
-{
-    for(;loop > 0; loop --);
-}
-
 //------------------------------------------------------------------------------
 //         Global functions
 //------------------------------------------------------------------------------
@@ -153,10 +100,10 @@ void MCI_Enable(Mci *pMci, unsigned char enb)
 
     // Set the Control Register: Enable/Disable MCI interface clock
     if(enb == DISABLE) {
-        MCI_DISABLE(pMciHw);
+        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS);
     }
     else {
-        MCI_ENABLE(pMciHw);
+        WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIEN);
     }
 }
 
@@ -171,29 +118,25 @@ void MCI_Init(
     Mci *pMci,
     AT91S_MCI *pMciHw,
     unsigned char mciId,
-    unsigned int mode,
-    unsigned int bPolling)
+    unsigned int mode)
 {
     unsigned short clkDiv;
 
     SANITY_CHECK(pMci);
     SANITY_CHECK(pMciHw);
-    SANITY_CHECK((mode == MCI_MMC_SLOTA) || (mode == MCI_SD_SLOTA)
-                 || (mode == MCI_MMC_SLOTB) || (mode == MCI_SD_SLOTB));
+    SANITY_CHECK((mode == MCI_MMC_SLOTA) || (mode == MCI_MMC_SLOTB)
+                 || (mode == MCI_SD_SLOTA) || (mode == MCI_SD_SLOTB));
 
     // Initialize the MCI driver structure
-    pMci->pMciHw    = pMciHw;
-    pMci->mciId     = mciId;
-    pMci->mciMode   = mode;
-    pMci->bPolling  = bPolling;    
+    pMci->pMciHw = pMciHw;
+    pMci->mciId  = mciId;
     pMci->semaphore = 1;
-    pMci->pCommand  = 0;
+    pMci->pCommand = 0;
 
-#if !defined(OP_BOOTSTRAP_MCI_on) || defined(at91sam9g20)
-    // Enable the MCI peripheral
-    PERIPH_ENABLE(mciId);
+    // Enable the MCI clock
+    WRITE_PMC(AT91C_BASE_PMC, PMC_PCER, (1 << mciId));
 
-    // Reset the MCI
+     // Reset the MCI
     WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_SWRST);
 
     // Disable the MCI
@@ -206,7 +149,7 @@ void MCI_Init(
     WRITE_MCI(pMciHw, MCI_DTOR, DTOR_1MEGA_CYCLES);
 
     // Set the Mode Register: 400KHz for MCK = 48MHz (CLKDIV = 58)
-    clkDiv = (BOARD_MCK / (MCI_INITIAL_SPEED * 2)) - 1;
+    clkDiv = (BOARD_MCK / (400000 * 2)) - 1;
     WRITE_MCI(pMciHw, MCI_MR, (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))));
 
     // Set the SDCard Register
@@ -216,11 +159,7 @@ void MCI_Init(
     WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIEN);
 
     // Disable the MCI peripheral clock.
-    PERIPH_DISABLE(mciId);
-#else
-    // Assume ROM code initialize the MCI already
-    TRACE_INFO("SD bootstrap not init mci!\n\r");
-#endif
+    WRITE_PMC(AT91C_BASE_PMC, PMC_PCDR, (1 << mciId));
 }
 
 //------------------------------------------------------------------------------
@@ -234,43 +173,20 @@ void MCI_Close(Mci *pMci)
     AT91S_MCI *pMciHw = pMci->pMciHw;
 
     SANITY_CHECK(pMci);
-        
-    if (!pMciHw)
-        return;
+    SANITY_CHECK(pMciHw);
+
+    // Initialize the MCI driver structure
+    pMci->semaphore = 1;
+    pMci->pCommand = 0;
+
+    // Disable the MCI peripheral clock.
+    WRITE_PMC(AT91C_BASE_PMC, PMC_PCDR, (1 << pMci->mciId));
 
     // Disable the MCI
     WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS);
 
     // Disable all the interrupts
     WRITE_MCI(pMciHw, MCI_IDR, 0xFFFFFFFF);
-
-    // Disable the MCI peripheral clock.
-    WRITE_PMC(AT91C_BASE_PMC, PMC_PCDR, (1 << pMci->mciId));
-
-    // Initialize the MCI driver structure
-    pMci->semaphore = 1;
-    pMci->pCommand = 0;
-}
-
-//------------------------------------------------------------------------------
-/// Get the  MCI CLKDIV in the MCI_MR register. The max. for MCI clock is
-/// MCK/2 and corresponds to CLKDIV = 0
-/// \param pMci     Pointer to the low level MCI driver.
-/// \return The current speed used, 0 for fail.
-//------------------------------------------------------------------------------
-unsigned int MCI_GetSpeed(Mci *pMci, unsigned int *mciDiv)
-{
-    AT91S_MCI *pMciHw = pMci->pMciHw;
-    unsigned int mciMr;
-
-    SANITY_CHECK(pMci);
-    SANITY_CHECK(pMci->pMciHw);
-
-    // Get the Mode Register
-    mciMr  = READ_MCI(pMciHw, MCI_MR);
-    mciMr &= AT91C_MCI_CLKDIV;
-    if (mciDiv) *mciDiv = mciMr;
-    return (BOARD_MCK / 2 / (mciMr + 1));
 }
 
 //------------------------------------------------------------------------------
@@ -278,60 +194,36 @@ unsigned int MCI_GetSpeed(Mci *pMci, unsigned int *mciDiv)
 /// MCK/2 and corresponds to CLKDIV = 0
 /// \param pMci  Pointer to the low level MCI driver.
 /// \param mciSpeed  MCI clock speed in Hz.
-/// \param mciLimit  MCI clock limit in Hz, if not limit, set mciLimit to zero.
-/// \param mck       MCK to generate MCI Clock, in Hz
-/// \return The actual speed used, 0 for fail.
 //------------------------------------------------------------------------------
-unsigned int MCI_SetSpeed(Mci *pMci,
-                          unsigned int mciSpeed,
-                          unsigned int mciLimit,
-                          unsigned int mck)
+void MCI_SetSpeed(Mci *pMci, unsigned int mciSpeed)
 {
     AT91S_MCI *pMciHw = pMci->pMciHw;
     unsigned int mciMr;
     unsigned int clkdiv;
-    unsigned int divLimit = 0;
 
     SANITY_CHECK(pMci);
     SANITY_CHECK(pMci->pMciHw);
 
+    // Set the Mode Register: 400KHz for MCK = 48MHz (CLKDIV = 58)
     mciMr = READ_MCI(pMciHw, MCI_MR) & (~AT91C_MCI_CLKDIV);
 
     // Multimedia Card Interface clock (MCCK or MCI_CK) is Master Clock (MCK)
     // divided by (2*(CLKDIV+1))
-    // mciSpeed = MCK / (2*(CLKDIV+1))
-    if (mciLimit) {
-        divLimit = (mck / 2 / mciLimit);
-        if ((mck / 2) % mciLimit) divLimit ++;
-    }
     if (mciSpeed > 0) {
-        clkdiv = (mck / 2 / mciSpeed);
-        if (mciLimit && clkdiv < divLimit)
-            clkdiv = divLimit;
-        if (clkdiv > 0) 
+
+        clkdiv = (BOARD_MCK / (mciSpeed * 2));
+        if (clkdiv > 0) {
+
             clkdiv -= 1;
+        }
         ASSERT( (clkdiv & 0xFFFFFF00) == 0, "mciSpeed too small");
     }
-    else    clkdiv = 0;
+    else {
 
-    // Actual MCI speed
-    mciSpeed = mck / 2 / (clkdiv + 1);
-
-    // Set the Data Timeout Register & Completion Timeout
-    // Data timeout is 500ms, completion timeout 1s.
-    //MCI_SetTimeout(pMciHw, mciSpeed / 2, mciSpeed);
+        clkdiv = 0;
+    }
 
     WRITE_MCI(pMciHw, MCI_MR, mciMr | clkdiv);
-    return (mciSpeed);
-}
-
-//------------------------------------------------------------------------------
-/// Configure the MCI_CFG to enable the HS mode (MCI2 only)
-/// \param pMci     Pointer to the low level MCI driver.
-/// \param hsEnable 1 to enable, 0 to disable HS mode.
-//------------------------------------------------------------------------------
-void MCI_EnableHsMode(Mci *pMci, unsigned char hsEnable)
-{
 }
 
 //------------------------------------------------------------------------------
@@ -382,53 +274,59 @@ unsigned char MCI_SendCommand(Mci *pMci, MciCmd *pCommand)
     pMci->pCommand = pCommand;
     pCommand->status = MCI_STATUS_PENDING;
 
-    // Enable the MCI Peripheral clock
+    // Enable the MCI clock
     WRITE_PMC(AT91C_BASE_PMC, PMC_PCER, (1 << pMci->mciId));
 
+    //Disable MCI clock, for multi-block data transfer
+    MCI_Enable(pMci, DISABLE);
+
+    // Set PDC data transfer direction
+    if(pCommand->blockSize > 0) {
+        if(pCommand->isRead) {
+            WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_RXTEN);
+        }
+        else {
+            WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_TXTEN);
+        }
+    }
     // Disable transmitter and receiver
     WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS);
-    
-    mciMr = READ_MCI(pMciHw, MCI_MR) & (~(  AT91C_MCI_WRPROOF
-                                          | AT91C_MCI_RDPROOF
-                                          | AT91C_MCI_BLKLEN
-                                          | AT91C_MCI_PDCMODE));
-    
-    // Command with DATA stage
-    if (pCommand->blockSize && pCommand->nbBlock) {
-        // Enable PDC mode and set block size
-        if(pCommand->tranType != MCI_CONTINUE_TRANSFER) {
 
-            
-            WRITE_MCI(pMciHw, MCI_MR, mciMr | AT91C_MCI_PDCMODE
-                                            | AT91C_MCI_RDPROOF
-                                            | AT91C_MCI_WRPROOF
-                                            |(pCommand->blockSize << 16));            
+    mciMr = READ_MCI(pMciHw, MCI_MR) & (~(AT91C_MCI_WRPROOF|AT91C_MCI_RDPROOF|AT91C_MCI_BLKLEN | AT91C_MCI_PDCMODE));
+
+    // Command with DATA stage
+    if (pCommand->blockSize > 0) {
+        // Enable PDC mode and set block size
+        if(pCommand->conTrans != MCI_CONTINUE_TRANSFER) {
+
+            WRITE_MCI(pMciHw, MCI_MR, mciMr | AT91C_MCI_PDCMODE |AT91C_MCI_RDPROOF|AT91C_MCI_WRPROOF|(pCommand->blockSize << 16));
         }
- 
-        // Sanity check
-        if (pCommand->nbBlock == 0)
-            pCommand->nbBlock = 1;
 
         // DATA transfer from card to host
         if (pCommand->isRead) {
             WRITE_MCI(pMciHw, MCI_RPR, (int) pCommand->pData);
 
-            // Update the PDC counter
+            // Sanity check
+            if (pCommand->nbBlock == 0)
+                pCommand->nbBlock = 1;
+            ////////
             if ((pCommand->blockSize & 0x3) != 0) {
                 WRITE_MCI(pMciHw, MCI_RCR, (pCommand->nbBlock * pCommand->blockSize) / 4 + 1);
             }
             else {
                 WRITE_MCI(pMciHw, MCI_RCR, (pCommand->nbBlock * pCommand->blockSize) / 4);
             }
-            WRITE_MCI(pMciHw, MCI_RNCR, 0);
 
             WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_RXTEN);
             mciIer = AT91C_MCI_ENDRX | STATUS_ERRORS;
+            // mciIer = AT91C_MCI_RXBUFF | STATUS_ERRORS;
         }
 
         // DATA transfer from host to card
         else {
-
+            // Sanity check
+            if (pCommand->nbBlock == 0)
+                pCommand->nbBlock = 1;
             WRITE_MCI(pMciHw, MCI_TPR, (int) pCommand->pData);
             // Update the PDC counter
             if ((pCommand->blockSize & 0x3) != 0) {
@@ -438,17 +336,8 @@ unsigned char MCI_SendCommand(Mci *pMci, MciCmd *pCommand)
                 WRITE_MCI(pMciHw, MCI_TCR, (pCommand->nbBlock * pCommand->blockSize) / 4);
             }
             // MCI_BLKE notifies the end of Multiblock command
-            mciIer = AT91C_MCI_ENDTX | STATUS_ERRORS;
+            mciIer = AT91C_MCI_BLKE | STATUS_ERRORS;
         }
-    }
-    // Start an infinite block transfer (but no data in current command)
-    else if (pCommand->dataTran) {
-        // Set block size
-        WRITE_MCI(pMciHw, MCI_MR, mciMr | AT91C_MCI_RDPROOF
-                                        | AT91C_MCI_WRPROOF
-                                        |(pCommand->blockSize << 16));
-        // Set data length: 0, no PDC operation
-        mciIer = AT91C_MCI_CMDRDY | STATUS_ERRORS;
     }
     // No data transfer: stop at the end of the command
     else {
@@ -456,10 +345,10 @@ unsigned char MCI_SendCommand(Mci *pMci, MciCmd *pCommand)
         mciIer = AT91C_MCI_CMDRDY | STATUS_ERRORS;
     }
     // Enable MCI clock
-    MCI_ENABLE(pMciHw);
+    MCI_Enable(pMci, ENABLE);
 
     // Send the command
-    if((pCommand->tranType != MCI_CONTINUE_TRANSFER)
+    if((pCommand->conTrans != MCI_CONTINUE_TRANSFER)
         || (pCommand->blockSize == 0)) {
 
         WRITE_MCI(pMciHw, MCI_ARGR, pCommand->arg);
@@ -467,10 +356,8 @@ unsigned char MCI_SendCommand(Mci *pMci, MciCmd *pCommand)
     }
 
     // In case of transmit, the PDC shall be enabled after sending the command
-    if (pCommand->blockSize > 0) {
-        if (!pCommand->isRead) {
-            WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_TXTEN);
-        }
+    if ((pCommand->blockSize > 0) && !(pCommand->isRead)) {
+        WRITE_MCI(pMciHw, MCI_PTCR, AT91C_PDC_TXTEN);
     }
 
     // Ignore data error
@@ -494,19 +381,38 @@ unsigned char MCI_CheckBusy(Mci *pMci)
     unsigned int status;
 
     // Enable MCI clock
-    PERIPH_ENABLE(pMci->mciId);
-    MCI_ENABLE(pMciHw);
+    MCI_Enable(pMci, ENABLE);
 
     status = READ_MCI(pMciHw, MCI_SR);
     // TRACE_DEBUG("status %x\n\r",status);
+
 
     if(((status & AT91C_MCI_NOTBUSY)!=0)
         && ((status & AT91C_MCI_DTIP)==0)) {
 
         // Disable MCI clock
-        MCI_DISABLE(pMciHw);
-        PERIPH_DISABLE(pMci->mciId);
+        MCI_Enable(pMci, DISABLE);
 
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
+//------------------------------------------------------------------------------
+/// Check BLKE bit of status register on the given MCI driver.
+/// \param pMci  Pointer to a MCI driver instance.
+//------------------------------------------------------------------------------
+unsigned char MCI_CheckBlke(Mci *pMci)
+{
+    AT91S_MCI *pMciHw = pMci->pMciHw;
+    unsigned int status;
+
+    status = READ_MCI(pMciHw, MCI_SR);
+    // TRACE_DEBUG("status %x\n\r",status);
+
+    if((status & AT91C_MCI_BLKE)!=0) {
         return 0;
     }
     else {
@@ -518,22 +424,24 @@ unsigned char MCI_CheckBusy(Mci *pMci)
 /// Processes pending events on the given MCI driver.
 /// \param pMci  Pointer to a MCI driver instance.
 //------------------------------------------------------------------------------
+void MCI_Handler(Mci *pMci) __attribute__ ((section(".sramfunc")));
 void MCI_Handler(Mci *pMci)
 {
     AT91S_MCI *pMciHw = pMci->pMciHw;
     MciCmd *pCommand = pMci->pCommand;
-    unsigned int status, status0, mask;
+    unsigned int status;
     unsigned char i;
+    #if defined(at91rm9200)
+    unsigned int mciCr, mciSdcr, mciMr, mciDtor;
+    #endif
 
     SANITY_CHECK(pMci);
     SANITY_CHECK(pMciHw);
     SANITY_CHECK(pCommand);
 
     // Read the status register
-    status0 = READ_MCI(pMciHw, MCI_SR);
-    mask    = READ_MCI(pMciHw, MCI_IMR);
-    status =  status0 & mask;
-    TRACE_DEBUG("status %x & %x, %x\n\r", status0, mask, status);
+    status = READ_MCI(pMciHw, MCI_SR) & READ_MCI(pMciHw, MCI_IMR);
+    // TRACE_DEBUG("status %x\n\r", status);
 
     // Check if an error has occured
     if ((status & STATUS_ERRORS) != 0) {
@@ -552,67 +460,37 @@ void MCI_Handler(Mci *pMci)
             pCommand->status = MCI_STATUS_ERROR;
         }
     }
-    
-    // Check if writing end
-    if (((status & AT91C_MCI_ENDTX) != 0)
-        || ((status & AT91C_MCI_TXBUFE) != 0)) {
-        if ((status0 & AT91C_MCI_BLKE) == 0)
-            WRITE_MCI(pMciHw, MCI_IER, AT91C_MCI_BLKE);
-        else
-            status |= AT91C_MCI_BLKE;
-    }
 
     // Check if a transfer has been completed
     if (((status & AT91C_MCI_CMDRDY) != 0)
         || ((status & AT91C_MCI_ENDRX) != 0)
         || ((status & AT91C_MCI_RXBUFF) != 0)
+        || ((status & AT91C_MCI_ENDTX) != 0)
         || ((status & AT91C_MCI_BLKE) != 0)
         || ((status & AT91C_MCI_RTOE) != 0)) {
 
-        // Store the card response in the provided buffer
-        if (pCommand->pResp) {
-            unsigned char resSize;
+        if (((status & AT91C_MCI_ENDRX) != 0)
+            || ((status & AT91C_MCI_RXBUFF) != 0)
+            || ((status & AT91C_MCI_ENDTX) != 0)) {
 
-            switch (pCommand->resType) {
-            case 2:
-                resSize = 4;
-                break;
-
-            case 1: case 3: case 4: case 5: case 6: case 7:
-                resSize = 1;
-                break;
-
-            default:
-                resSize = 0;
-                break;
-            }
-            for (i=0; i < resSize; i++) {
-
-                pCommand->pResp[i] = READ_MCI(pMciHw, MCI_RSPR[0]);
-            }
+            MCI_Enable(pMci, DISABLE);
         }
 
-        TRACE_DEBUG(" ** CmdE\n\r");
-        Delay(1000);
-
-        // If no RD proof, FIFO may have dummy bytes
-        // Reset the MCI to clear these dummy data
-        #if (AT91C_MCI_RDPROOF == 0)
+        /// On AT91RM9200-EK, if stop transmission, software reset MCI.
+        #if defined(at91rm9200)
         if ((pCommand->cmd & AT91C_MCI_TRCMD_STOP) != 0) {
-            unsigned int mciCr, mciSdcr, mciMr, mciDtor;
             mciMr = READ_MCI(pMciHw, MCI_MR);
             mciSdcr = READ_MCI(pMciHw, MCI_SDCR);
             mciDtor = READ_MCI(pMciHw, MCI_DTOR);
             WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_SWRST);
+            // TRACE_DEBUG("reset MCI\n\r");
+
             WRITE_MCI(pMciHw, MCI_CR, AT91C_MCI_MCIDIS | AT91C_MCI_PWSDIS);
             WRITE_MCI(pMciHw, MCI_MR, mciMr);
             WRITE_MCI(pMciHw, MCI_SDCR, mciSdcr);
             WRITE_MCI(pMciHw, MCI_DTOR, mciDtor);
         }
         #endif
-
-        // Disable MCI
-        MCI_DISABLE(pMciHw);
 
         // If no error occured, the transfer is successful
         if (pCommand->status == MCI_STATUS_PENDING) {
@@ -629,12 +507,51 @@ void MCI_Handler(Mci *pMci)
             TRACE_DEBUG_WP(">");
         TRACE_DEBUG_WP("\n\r");
 #endif
-        
+        // Store the card response in the provided buffer
+        if (pCommand->pResp) {
+            unsigned char resSize;
+
+            switch (pCommand->resType) {
+                case 1:
+                resSize = 1;
+                break;
+
+                case 2:
+                resSize = 4;
+                break;
+
+                case 3:
+                resSize = 1;
+                break;
+
+                case 4:
+                resSize = 1;
+                break;
+
+                case 5:
+                resSize = 1;
+                break;
+
+                case 6:
+                resSize = 1;
+                break;
+
+                case 7:
+                resSize = 1;
+                break;
+
+                default:
+                resSize = 0;
+                break;
+            }
+            for (i=0; i < resSize; i++) {
+
+                pCommand->pResp[i] = READ_MCI(pMciHw, MCI_RSPR[0]);
+            }
+        }
+
         // Disable interrupts
-        WRITE_MCI(pMciHw, MCI_IDR, 0xFFFFFFFF);
-        
-        // Disable peripheral
-        PERIPH_DISABLE(pMci->mciId);
+        WRITE_MCI(pMciHw, MCI_IDR, READ_MCI(pMciHw, MCI_IMR));
 
         // Release the semaphore
         pMci->semaphore++;
@@ -650,14 +567,8 @@ void MCI_Handler(Mci *pMci)
 /// Returns 1 if the given MCI transfer is complete; otherwise returns 0.
 /// \param pCommand  Pointer to a MciCmd instance.
 //------------------------------------------------------------------------------
-unsigned char MCI_IsTxComplete(Mci *pMci)
+unsigned char MCI_IsTxComplete(MciCmd *pCommand)
 {
-    MciCmd *pCommand = pMci->pCommand;	
-	
-    if(pMci->bPolling == MCI_POLLING_MODE) {
-        MCI_Handler(pMci);
-    }
-  
     if (pCommand->status != MCI_STATUS_PENDING) {
         if (pCommand->status != 0) {
             TRACE_DEBUG("MCI_IsTxComplete %d\n\r", pCommand->status);

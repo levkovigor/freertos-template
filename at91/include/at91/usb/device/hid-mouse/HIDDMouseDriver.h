@@ -53,7 +53,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <usb/common/core/USBGenericRequest.h>
+#include "at91/usb/common/core/USBGenericRequest.h"
 
 //------------------------------------------------------------------------------
 //         Definitions
@@ -86,7 +86,7 @@
     Function: HIDDMouseDriver_Initialize
         Initializes the HID keyboard device driver.
 */
-extern void HIDDMouseDriver_Initialize(void);
+extern void HIDDMouseDriver_Initialize();
 
 /*
     Function: HIDDMouseDriver_RequestHandler

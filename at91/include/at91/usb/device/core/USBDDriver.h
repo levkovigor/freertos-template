@@ -50,8 +50,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBDDriverDescriptors.h"
-#include <usb/common/core/USBGenericRequest.h>
+#include "at91/usb/device/core/USBDDriverDescriptors.h"
+#include "at91/usb/common/core/USBGenericRequest.h"
 
 //------------------------------------------------------------------------------
 //         Types
@@ -71,10 +71,7 @@ typedef struct {
     unsigned char cfgnum;
     /// Indicates if remote wake up has been enabled by the host.
     unsigned char isRemoteWakeUpEnabled;
-#if defined(CHIP_USB_OTGHS)
-    /// Features supported by OTG
-    unsigned char otg_features_supported;
-#endif
+
 } USBDDriver;
 
 //------------------------------------------------------------------------------
@@ -91,11 +88,6 @@ extern void USBDDriver_RequestHandler(
     const USBGenericRequest *pRequest);
 
 extern unsigned char USBDDriver_IsRemoteWakeUpEnabled(const USBDDriver *pDriver);
-
-#if defined(CHIP_USB_OTGHS)
-extern unsigned char USBDDriver_returnOTGFeatures(void);
-extern void USBDDriver_clearOTGFeatures(void);
-#endif
 
 #endif //#ifndef USBDDRIVER_H
 

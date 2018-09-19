@@ -38,7 +38,7 @@
 //         Headers
 //-----------------------------------------------------------------------------
 
-#include "USBConfigurationDescriptor.h"
+#include "at91/usb/common/core/USBConfigurationDescriptor.h"
 
 //-----------------------------------------------------------------------------
 //         Exported functions

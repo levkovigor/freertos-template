@@ -43,12 +43,10 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <board.h>
-#include <utility/trace.h>
-#include <utility/video.h>
-#include "isi.h"
-
-#if !defined (BOARD_ISI_V200)
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/utility/trace.h"
+#include "at91/utility/video.h"
+#include "at91/peripherals/isi/isi.h"
 
 //-----------------------------------------------------------------------------
 /// Enable ISI
@@ -154,7 +152,7 @@ void ISI_Reset(void)
     // Finish capturing the current frame and then shut down the module.
     AT91C_BASE_ISI->ISI_CR1 = AT91C_ISI_RST | AT91C_ISI_DIS;
     // wait Software reset has completed successfully.
-    while( (!(volatile int)AT91C_BASE_ISI->ISI_SR & AT91C_ISI_SOFTRST)
+    while( (!((volatile int)AT91C_BASE_ISI->ISI_SR & AT91C_ISI_SOFTRST))
         && (timeout < 0x5000) ){
         timeout++;
     }
@@ -256,6 +254,3 @@ void ISI_Init(AT91PS_VIDEO pVideo)
                                  + ( AT91C_ISI_Y2R_CROFF_16)
                                  + ( AT91C_ISI_Y2R_CBOFF_16);
 }
-
-#endif // !defined (BOARD_ISI_V200)
-

@@ -217,8 +217,5 @@ extern unsigned char USBEndpointDescriptor_GetType(
 extern unsigned short USBEndpointDescriptor_GetMaxPacketSize(
     const USBEndpointDescriptor *endpoint);
 
-extern unsigned char USBEndpointDescriptor_GetInterval(
-    const USBEndpointDescriptor *endpoint);
-
 #endif //#ifndef USBENDPOINTDESCRIPTOR_H
 

@@ -63,6 +63,9 @@
 #ifndef NORFLASHINTEL_H
 #define NORFLASHINTEL_H
 
+#include "at91/memories/norflash/NorFlashCFI.h"
+#include "at91/memories/norflash/NorFlashApi.h"
+
 //------------------------------------------------------------------------------
 //         Local functions
 //------------------------------------------------------------------------------
@@ -85,15 +88,7 @@ unsigned char INTEL_Write_Data(
     unsigned char *buffer,
     unsigned int size);
 
-const struct NorFlashOperations intelOperations = {
-   INTEL_Reset, 
-   INTEL_Write_Data,
-   INTEL_ReadManufactoryId, 
-   INTEL_ReadDeviceID,
-   INTEL_EraseChip,
-   INTEL_EraseSector
-   
-};
+const struct NorFlashOperations intelOperations;
 
 #endif //#ifndef NORFLASHINTEL_H
 

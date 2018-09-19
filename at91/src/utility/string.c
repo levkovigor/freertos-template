@@ -45,9 +45,11 @@
 //------------------------------------------------------------------------------
 //         Headers
 //------------------------------------------------------------------------------
+#include "at91/commons.h"
 
 #include <string.h>
 
+#if USE_AT91LIB_STDIO_AND_STRING
 //------------------------------------------------------------------------------
 //         Global Functions
 //------------------------------------------------------------------------------
@@ -59,6 +61,7 @@
 /// \param pSource  Source buffer.
 /// \param num  Number of bytes to copy.
 //------------------------------------------------------------------------------
+void * memcpy(void *pDestination, const void *pSource, size_t num) __attribute__ ((section(".sramfunc")));
 void * memcpy(void *pDestination, const void *pSource, size_t num)
 {
     unsigned char *pByteDestination;
@@ -97,6 +100,7 @@ void * memcpy(void *pDestination, const void *pSource, size_t num)
 /// \param value    Value to fill the region with
 /// \param num      Size to fill in bytes
 //------------------------------------------------------------------------------
+void * memset(void *pBuffer, int value, size_t num) __attribute__ ((section(".sramfunc")));
 void * memset(void *pBuffer, int value, size_t num)
 {
     unsigned char *pByteDestination;
@@ -142,6 +146,7 @@ char * strchr(const char *pString, int character)
 /// Return the length of a given string
 /// \param pString Pointer to the start of the string.
 //-----------------------------------------------------------------------------
+size_t strlen(const char *pString) __attribute__ ((section(".sramfunc")));
 size_t strlen(const char *pString)
 {
     unsigned int length = 0;
@@ -154,7 +159,7 @@ size_t strlen(const char *pString)
 
 
 //-----------------------------------------------------------------------------
-/// Search a character backword from the end of given string.
+/// Search a character backward from the end of given string.
 /// Returns a pointer to the character location.
 /// \param pString   Pointer to the start of the string to search.
 /// \param character The character to find.
@@ -177,6 +182,7 @@ char * strrchr(const char *pString, int character)
 /// \param pDestination Pointer to the destination string.
 /// \param pSource      Pointer to the source string.
 //-----------------------------------------------------------------------------
+char * strcpy(char *pDestination, const char *pSource) __attribute__ ((section(".sramfunc")));
 char * strcpy(char *pDestination, const char *pSource)
 {
     char *pSaveDest = pDestination;
@@ -194,6 +200,7 @@ char * strcpy(char *pDestination, const char *pSource)
 /// \param pString2 Pointer to the start of the 2nd string.
 /// \param count    Number of bytes that should be compared.
 //-----------------------------------------------------------------------------
+int strncmp(const char *pString1, const char *pString2, size_t count) __attribute__ ((section(".sramfunc")));
 int strncmp(const char *pString1, const char *pString2, size_t count)
 {
     int r;
@@ -221,6 +228,7 @@ int strncmp(const char *pString1, const char *pString2, size_t count)
 /// \param pSource      Pointer to the start of the source string.
 /// \param count        Number of bytes that should be copied.
 //-----------------------------------------------------------------------------
+char * strncpy(char *pDestination, const char *pSource, size_t count) __attribute__ ((section(".sramfunc")));
 char * strncpy(char *pDestination, const char *pSource, size_t count)
 {
     char *pSaveDest = pDestination;
@@ -236,4 +244,4 @@ char * strncpy(char *pDestination, const char *pSource, size_t count)
     }
     return pSaveDest;
 }
-
+#endif // #if USE_AT91LIB_STDIO_AND_STRING

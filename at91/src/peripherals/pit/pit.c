@@ -31,8 +31,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "pit.h"
-#include <board.h>
+#include <at91/boards/ISIS_OBC_G20/board.h>
+#include <at91/peripherals/pit/pit.h>
 
 //------------------------------------------------------------------------------
 //         Global functions

@@ -28,41 +28,15 @@
  */
 
 //-----------------------------------------------------------------------------
-// Reg Reads                    Writes
-//----------------------------------------------------------------------------
-// 0   ID code                  Unpredictable
-// 0   cache type               Unpredictable
-// 0   TCM status               Unpredictable
-// 1   Control                  Control
-// 2   Translation table base   Translation table base
-// 3   Domain access control    Domain access control
-// 4                                                       (Reserved)    
-// 5   Data fault status        Data fault status
-// 5   Instruction fault status Instruction fault status
-// 6   Fault address            Fault address
-// 7   cache operations         cache operations
-// 8   Unpredictable            TLB operations
-// 9   cache lockdown           cache lockdown
-// 9   TCM region               TCM region
-// 10  TLB lockdown             TLB lockdown
-// 11                                                      (Reserved) 
-// 12                                                      (Reserved) 
-// 13  FCSE PID                 FCSE PID
-// 13  Context ID               Context ID
-// 14                                                      (Reserved)             
-// 15  Test configuration       Test configuration
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
 //         Headers
 //-----------------------------------------------------------------------------
 
-#include <board.h>
+#include "at91/boards/ISIS_OBC_G20/board.h"
 
 #ifdef CP15_PRESENT
 
-#include <utility/trace.h>
-#include "cp15.h"
+#include "at91/utility/trace.h"
+#include "at91/peripherals/cp15/cp15.h"
 
 #if defined(__ICCARM__)
 #include <intrinsics.h>
@@ -76,69 +50,88 @@
 //-----------------------------------------------------------------------------
 //         Defines
 //-----------------------------------------------------------------------------
+/*
+#define CP15_RR_BIT 14 // RR bit Replacement strategy for ICache and DCache: 
+                       // 0 = Random replacement 
+                       // 1 = Round-robin replacement.
+                      
+#define CP15_V_BIT  13 // V bit Location of exception vectors: 
+                       // 0 = Normal exception vectors selected address range = 0x0000 0000 to 0x0000 001C 
+                       // 1 = High exception vect selected, address range = 0xFFFF 0000 to 0xFFFF 001C
+*/                       
+#define CP15_I_BIT  12 // I bit ICache enable/disable: 
+                       // 0 = ICache disabled 
+                       // 1 = ICache enabled
+/*                       
+#define CP15_R_BIT   9 // R bit ROM protection
+
+#define CP15_S_BIT   8 // S bit System protection
+                  
+#define CP15_B_BIT   7 // B bit Endianness: 
+                       // 0 = Little-endian operation 
+                       // 1 = Big-endian operation.                  
+*/                     
+#define CP15_C_BIT   2 // C bit DCache enable/disable: 
+                       // 0 = Cache disabled 
+                       // 1 = Cache enabled
+/*
+#define CP15_A_BIT   1 // A bit Alignment fault enable/disable:
+                       // 0 = Data address alignment fault checking disabled
+                       // 1 = Data address alignment fault checking enabled
+*/
+#define CP15_M_BIT   0 // M bit MMU enable/disable: 0 = disabled 1 = enabled.
+                       // 0 = disabled 
+                       // 1 = enabled
 
 
 //-----------------------------------------------------------------------------
 //         Global functions
 //-----------------------------------------------------------------------------
 
-
-///////////////////////////////////////////////////////////////////////////////
-/// CP15 c1
-/// * I cache
-/// * D cache
-///////////////////////////////////////////////////////////////////////////////
-
 //------------------------------------------------------------------------------
-/// Check Instruction cache
-/// \return 0 if I_cache disable, 1 if I_cache enable
+/// Check Instruction Cache
+/// \return 0 if I_Cache disable, 1 if I_Cache enable
 //------------------------------------------------------------------------------
-unsigned int CP15_IsIcacheEnabled(void)
+unsigned int CP15_Is_I_CacheEnabled(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
     return ((control & (1 << CP15_I_BIT)) != 0);
 } 
 
 //------------------------------------------------------------------------------
-/// Enable Instruction cache
+/// Enable Instruction Cache
 //------------------------------------------------------------------------------
-void CP15_EnableIcache(void)
+void CP15_Enable_I_Cache(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
     // Check if cache is disabled
     if ((control & (1 << CP15_I_BIT)) == 0) {
 
         control |= (1 << CP15_I_BIT);
-        CP15_WriteControl(control);        
+        _writeControlRegister(control);        
         TRACE_INFO("I cache enabled.\n\r");
     }
-#if !defined(OP_BOOTSTRAP_on)
-    else {
-
-        TRACE_INFO("I cache is already enabled.\n\r");
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
-/// Disable Instruction cache
+/// Disable Instruction Cache
 //------------------------------------------------------------------------------
-void CP15_DisableIcache(void)
+void CP15_Disable_I_Cache(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
     // Check if cache is enabled
     if ((control & (1 << CP15_I_BIT)) != 0) {
 
         control &= ~(1 << CP15_I_BIT);
-        CP15_WriteControl(control);        
+        _writeControlRegister(control);        
         TRACE_INFO("I cache disabled.\n\r");
     }
     else {
@@ -151,11 +144,11 @@ void CP15_DisableIcache(void)
 /// Check MMU
 /// \return 0 if MMU disable, 1 if MMU enable
 //------------------------------------------------------------------------------
-unsigned int CP15_IsMMUEnabled(void)
+unsigned int CP15_Is_MMUEnabled(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
     return ((control & (1 << CP15_M_BIT)) != 0);
 } 
 
@@ -166,13 +159,13 @@ void CP15_EnableMMU(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
     // Check if MMU is disabled
     if ((control & (1 << CP15_M_BIT)) == 0) {
 
         control |= (1 << CP15_M_BIT);
-        CP15_WriteControl(control);        
+        _writeControlRegister(control);        
         TRACE_INFO("MMU enabled.\n\r");
     }
     else {
@@ -188,14 +181,14 @@ void CP15_DisableMMU(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
     // Check if MMU is enabled
     if ((control & (1 << CP15_M_BIT)) != 0) {
 
         control &= ~(1 << CP15_M_BIT);
         control &= ~(1 << CP15_C_BIT);
-        CP15_WriteControl(control);        
+        _writeControlRegister(control);        
         TRACE_INFO("MMU disabled.\n\r");
     }
     else {
@@ -205,27 +198,27 @@ void CP15_DisableMMU(void)
 }
 
 //------------------------------------------------------------------------------
-/// Check D_cache
-/// \return 0 if D_cache disable, 1 if D_cache enable (with MMU of course)
+/// Check D_Cache
+/// \return 0 if D_Cache disable, 1 if D_Cache enable (with MMU of course)
 //------------------------------------------------------------------------------
-unsigned int CP15_IsDcacheEnabled(void)
+unsigned int CP15_Is_DCacheEnabled(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
     return ((control & ((1 << CP15_C_BIT)||(1 << CP15_M_BIT))) != 0);
 } 
 
 //------------------------------------------------------------------------------
-/// Enable Data cache
+/// Enable Data Cache
 //------------------------------------------------------------------------------
-void CP15_EnableDcache(void)
+void CP15_Enable_D_Cache(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
-    if( !CP15_IsMMUEnabled() ) {
+    if( !CP15_Is_MMUEnabled() ) {
         TRACE_ERROR("Do nothing: MMU not enabled\n\r");
     }
     else {
@@ -233,7 +226,7 @@ void CP15_EnableDcache(void)
         if ((control & (1 << CP15_C_BIT)) == 0) {
 
             control |= (1 << CP15_C_BIT);
-            CP15_WriteControl(control);        
+            _writeControlRegister(control);        
             TRACE_INFO("D cache enabled.\n\r");
         }
         else {
@@ -244,75 +237,25 @@ void CP15_EnableDcache(void)
 }
 
 //------------------------------------------------------------------------------
-/// Disable Data cache
+/// Disable Data Cache
 //------------------------------------------------------------------------------
-void CP15_DisableDcache(void)
+void CP15_Disable_D_Cache(void)
 {
     unsigned int control;
 
-    control = CP15_ReadControl();
+    control = _readControlRegister();
 
     // Check if cache is enabled
     if ((control & (1 << CP15_C_BIT)) != 0) {
 
         control &= ~(1 << CP15_C_BIT);
-        CP15_WriteControl(control);        
+        _writeControlRegister(control);        
         TRACE_INFO("D cache disabled.\n\r");
     }
     else {
 
         TRACE_INFO("D cache is already disabled.\n\r");
     }
-}
-
-//----------------------------------------------------------------------------
-/// Lock I cache
-/// \param I cache index
-//----------------------------------------------------------------------------
-void CP15_LockIcache(unsigned int index)
-{
-    unsigned int victim = 0;
-
-    // invalidate all the cache (4 ways) 
-    CP15_InvalidateIcache();
-    
-    // lockdown all the ways except this in parameter
-    victim =  CP15_ReadIcacheLockdown();
-    victim = 0;
-    victim |= ~index;
-    victim &= 0xffff;
-    CP15_WriteIcacheLockdown(victim);
-}
-
-//----------------------------------------------------------------------------
-/// Lock D cache
-/// \param D cache way
-//----------------------------------------------------------------------------
-void CP15_LockDcache(unsigned int index)
-{
-    unsigned int victim = 0;
-
-    // invalidate all the cache (4 ways)    
-    CP15_InvalidateDcache();
-    
-    // lockdown all the ways except this in parameter    
-    victim =  CP15_ReadDcacheLockdown();
-    victim = 0;
-    victim |= ~index;
-    victim &= 0xffff;
-    CP15_WriteDcacheLockdown(victim);
-}
-
-//----------------------------------------------------------------------------
-/// Lock D cache
-/// \param D cache way
-//----------------------------------------------------------------------------
-void CP15_ShutdownDcache(void)
-{ 
-    CP15_TestCleanInvalidateDcache();  
-    CP15_DrainWriteBuffer();
-    CP15_DisableDcache();
-    CP15_InvalidateTLB();      
 }
 
 #endif // CP15_PRESENT

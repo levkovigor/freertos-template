@@ -31,9 +31,9 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "hamming.h"
-#include <utility/trace.h>
-#include <utility/assert.h>
+#include "at91/utility/hamming.h"
+#include "at91/utility/trace.h"
+#include "at91/utility/assert.h"
 
 //------------------------------------------------------------------------------
 //         Internal function

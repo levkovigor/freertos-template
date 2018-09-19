@@ -30,7 +30,7 @@
 //------------------------------------------------------------------------------
 //         Headers
 //------------------------------------------------------------------------------
-#include "video.h"
+#include "at91/utility/video.h"
 
 //-----------------------------------------------------------------------------
 /// Conversion YCrCb to RGB:<BR>
@@ -65,7 +65,7 @@ void VIDEO_Ycc2Rgb(unsigned char *ycc, unsigned short *rgb, unsigned int len)
     int val3;
     int val4;
     int val5;
-    int i;
+    unsigned int i;
 
     for(i=0; i<len; i++)
     {

@@ -65,7 +65,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "pio.h"
+#include "at91/peripherals/pio/pio.h"
 
 //------------------------------------------------------------------------------
 //         Global functions
@@ -78,8 +78,6 @@ extern void PIO_ConfigureIt(const Pin *pPin, void (*handler)(const Pin *));
 extern void PIO_EnableIt(const Pin *pPin);
 
 extern void PIO_DisableIt(const Pin *pPin);
-
-extern void PIO_IT_InterruptHandler(void);
 
 #endif //#ifndef PIO_IT_H
 

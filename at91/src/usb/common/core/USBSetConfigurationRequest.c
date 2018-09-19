@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBSetConfigurationRequest.h"
+#include "at91/usb/common/core/USBSetConfigurationRequest.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

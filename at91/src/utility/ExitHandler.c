@@ -5,11 +5,12 @@
  *      Author: Akhil
  */
 
-#include <board.h>
-#include <commons.h>
-#include <utility/trace.h>
-#include <peripherals/cp15/cp15.h>
-#include "exithandler.h"
+#include "at91/utility/exithandler.h"
+
+#include "at91/commons.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/utility/trace.h"
+#include "at91/peripherals/cp15/cp15.h"
 
 #define RSTC_KEY_PASSWORD       (0xA5 << 24)
 
@@ -20,8 +21,8 @@ void gracefulReset() __attribute__ ((long_call, section (".sramfunc")));
  */
 static void disableCaches() {
 	CP15_DisableMMU();
-	CP15_DisableDcache();
-	CP15_DisableIcache();
+	CP15_Disable_D_Cache();
+	CP15_Disable_I_Cache();
 }
 
 void restart() {

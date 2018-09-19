@@ -31,18 +31,18 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "HIDDMouseDriver.h"
-#include "HIDDMouseDriverDescriptors.h"
-#include "HIDDMouseInputReport.h"
-#include <utility/trace.h>
-#include <usb/common/core/USBGetDescriptorRequest.h>
-#include <usb/common/hid/HIDGenericDescriptor.h>
-#include <usb/common/hid/HIDDescriptor.h>
-#include <usb/common/hid/HIDGenericRequest.h>
-#include <usb/common/hid/HIDReportRequest.h>
-#include <usb/common/hid/HIDIdleRequest.h>
-#include <usb/device/core/USBD.h>
-#include <usb/device/core/USBDDriver.h>
+#include "at91/usb/device/hid-mouse/HIDDMouseDriver.h"
+#include "at91/usb/device/hid-mouse/HIDDMouseDriverDescriptors.h"
+#include "at91/usb/device/hid-mouse/HIDDMouseInputReport.h"
+#include "at91/utility/trace.h"
+#include "at91/usb/common/core/USBGetDescriptorRequest.h"
+#include "at91/usb/common/hid/HIDGenericDescriptor.h"
+#include "at91/usb/common/hid/HIDDescriptor.h"
+#include "at91/usb/common/hid/HIDGenericRequest.h"
+#include "at91/usb/common/hid/HIDReportRequest.h"
+#include "at91/usb/common/hid/HIDIdleRequest.h"
+#include "at91/usb/device/core/USBD.h"
+#include "at91/usb/device/core/USBDDriver.h"
 
 //------------------------------------------------------------------------------
 //         Internal Defines
@@ -99,7 +99,7 @@ static unsigned char HIDDMouseDriver_GetDescriptor(unsigned char type,
                                                       unsigned char length)
 {
     const USBConfigurationDescriptor *pConfiguration;
-    HIDDescriptor *hidDescriptors[2];
+    HIDDescriptor *hidDescriptor;
 
     switch (type) {
 
@@ -131,14 +131,14 @@ static unsigned char HIDDMouseDriver_GetDescriptor(unsigned char type,
 
             // Parse the device configuration to get the HID descriptor
             USBConfigurationDescriptor_Parse(pConfiguration, 0, 0,
-                                     (USBGenericDescriptor **) &hidDescriptors[0]);
+                                     (USBGenericDescriptor **) &hidDescriptor);
 
             // Adjust length and send HID descriptor
             if (length > sizeof(HIDDescriptor)) {
 
                 length = sizeof(HIDDescriptor);
             }
-            USBD_Write(0, hidDescriptors[0], length, 0, 0);
+            USBD_Write(0, hidDescriptor, length, 0, 0);
             break;
 
         default:
@@ -211,6 +211,7 @@ static void HIDDMouseDriver_GetReport(unsigned char type,
 static void HIDDMouseDriver_SetReport(unsigned char type,
                                          unsigned short length)
 {
+	(void)length;
     TRACE_INFO("sReport ");
 
     // Check report type
@@ -264,7 +265,7 @@ void USBDDriverCallbacks_ConfigurationChanged(unsigned char cfgnum)
 //------------------------------------------------------------------------------
 /// Initializes the HID Mouse %device driver.
 //------------------------------------------------------------------------------
-void HIDDMouseDriver_Initialize(void)
+void HIDDMouseDriver_Initialize()
 {
     hiddMouseDriver.inputReportIdleRate = 0;
     HIDDMouseInputReport_Initialize(&(hiddMouseDriver.inputReport));

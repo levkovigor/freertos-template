@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBEndpointDescriptor.h"
+#include "at91/usb/common/core/USBEndpointDescriptor.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions
@@ -94,16 +94,5 @@ unsigned short USBEndpointDescriptor_GetMaxPacketSize(
     const USBEndpointDescriptor *endpoint)
 {
     return endpoint->wMaxPacketSize;
-}
-
-//------------------------------------------------------------------------------
-/// Returns the polling interval on an endpoint given its descriptor.
-/// \param endpoint - Pointer to a USBEndpointDescriptor instance.
-/// \return Polling interval of endpoint.
-//------------------------------------------------------------------------------
-unsigned char USBEndpointDescriptor_GetInterval(
-    const USBEndpointDescriptor *endpoint)
-{
-    return endpoint->bInterval;
 }
 

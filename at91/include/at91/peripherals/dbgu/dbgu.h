@@ -59,6 +59,7 @@
  
 /// Standard operating mode (asynchronous, 8bit, no parity, 1 stop bit)
 #define DBGU_STANDARD           AT91C_US_PAR_NONE
+#define INPUT_BUFFER_MAX_SIZE 	300
 
 //------------------------------------------------------------------------------
 //         Global functions

@@ -31,8 +31,8 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBDDriverCallbacks.h"
-#include <utility/trace.h>
+#include "at91/usb/device/core/USBDDriverCallbacks.h"
+#include "at91/utility/trace.h"
 
 //------------------------------------------------------------------------------
 //         Global functions
@@ -47,6 +47,9 @@ void USBDDriverCallbacks_InterfaceSettingChanged(
     unsigned char interface,
     unsigned char setting)
 {
+	(void)interface;
+	(void)setting;
+
     TRACE_INFO_WP("InterfaceSettingChanged ");
 }
 

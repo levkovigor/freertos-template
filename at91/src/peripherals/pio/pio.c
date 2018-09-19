@@ -31,8 +31,10 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "pio.h"
-#include <board.h>
+#include <stdio.h>
+
+#include "at91/peripherals/pio/pio.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
 
 //------------------------------------------------------------------------------
 //         Local Functions
@@ -52,10 +54,6 @@ static void PIO_SetPeripheralA(
     unsigned int mask,
     unsigned char enablePullUp)
 {
-#if !defined(AT91C_PIOA_ASR)
-    unsigned int abmr;
-#endif
-
     // Disable interrupts on the pin(s)
     pio->PIO_IDR = mask;
 
@@ -70,12 +68,7 @@ static void PIO_SetPeripheralA(
     }
 
     // Configure pin
-#if defined(AT91C_PIOA_ASR)
     pio->PIO_ASR = mask;
-#else
-    abmr = pio->PIO_ABSR;
-    pio->PIO_ABSR &= (~mask & abmr);
-#endif
     pio->PIO_PDR = mask;
 }
 
@@ -93,10 +86,6 @@ static void PIO_SetPeripheralB(
     unsigned int mask,
     unsigned char enablePullUp)
 {
-#if !defined(AT91C_PIOA_BSR)
-    unsigned int abmr;
-#endif
-
     // Disable interrupts on the pin(s)
     pio->PIO_IDR = mask;
 
@@ -111,35 +100,9 @@ static void PIO_SetPeripheralB(
     }
 
     // Configure pin
-#if defined(AT91C_PIOA_BSR)
     pio->PIO_BSR = mask;
-#else
-    abmr = pio->PIO_ABSR;
-    pio->PIO_ABSR = mask | abmr;
-#endif
     pio->PIO_PDR = mask;
 }
-
-#if defined(AT91C_PIOA_IFDGSR) //Glitch or Debouncing filter selection supported
-//------------------------------------------------------------------------------
-/// Configures Glitch or Debouncing filter for input
-/// \param pio      Pointer to a PIO controller.
-/// \param mask   Bitmask for filter selection.
-///                     each of 32 bit field, 0 is Glitch, 1 is Debouncing
-/// \param clkDiv  Clock divider if Debouncing select, using the lowest 14 bits
-///                     common for all PIO line of selecting deboucing filter
-//------------------------------------------------------------------------------
-static void PIO_SetFilter(
-    AT91S_PIO *pio,
-    unsigned int filterSel,
-    unsigned int clkDiv)
-{
-    pio->PIO_DIFSR = filterSel;//set Debouncing, 0 bit field no effect
-    pio->PIO_SCIFSR = ~filterSel;//set Glitch, 0 bit field no effect
-
-    pio->PIO_SCDR = clkDiv & 0x3FFF;//the lowest 14 bits work
-}
-#endif
 
 //------------------------------------------------------------------------------
 /// Configures one or more pin(s) or a PIO controller as inputs. Optionally,
@@ -255,6 +218,11 @@ static void PIO_SetOutput(
 //------------------------------------------------------------------------------
 unsigned char PIO_Configure(const Pin *list, unsigned int size)
 {
+	if(list == NULL)
+	{
+		return 0;
+	}
+
     // Configure pins
     while (size > 0) {
     
@@ -278,14 +246,6 @@ unsigned char PIO_Configure(const Pin *list, unsigned int size)
                              list->mask,
                              (list->attribute & PIO_PULLUP) ? 1 : 0,
                              (list->attribute & PIO_DEGLITCH)? 1 : 0);
-
-                #if defined(AT91C_PIOA_IFDGSR) //PIO3 with Glitch or Debouncing selection
-                //if glitch input filter enabled, set it
-                if(list->attribute & PIO_DEGLITCH)//Glitch input filter enabled
-                    PIO_SetFilter(list->pio,
-                        list->inFilter.filterSel,
-                        list->inFilter.clkDivider);
-                #endif
                 break;
     
             case PIO_OUTPUT_0:
@@ -315,7 +275,10 @@ unsigned char PIO_Configure(const Pin *list, unsigned int size)
 //------------------------------------------------------------------------------
 void PIO_Set(const Pin *pin)
 {
-    pin->pio->PIO_SODR = pin->mask;
+	if(pin != NULL)
+	{
+		pin->pio->PIO_SODR = pin->mask;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -326,7 +289,10 @@ void PIO_Set(const Pin *pin)
 //------------------------------------------------------------------------------
 void PIO_Clear(const Pin *pin)
 {
-    pin->pio->PIO_CODR = pin->mask;
+	if(pin != NULL)
+	{
+		pin->pio->PIO_CODR = pin->mask;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -341,6 +307,12 @@ void PIO_Clear(const Pin *pin)
 unsigned char PIO_Get(const Pin *pin)
 {
     unsigned int reg;
+
+    if(pin == NULL)
+    {
+    	return 0;
+    }
+
     if ((pin->type == PIO_OUTPUT_0) || (pin->type == PIO_OUTPUT_1)) {
 
         reg = pin->pio->PIO_ODSR;
@@ -371,6 +343,11 @@ unsigned char PIO_Get(const Pin *pin)
 //------------------------------------------------------------------------------
 unsigned char PIO_GetOutputDataStatus(const Pin *pin)
 {
+	if(pin == NULL)
+	{
+		return 0;
+	}
+
     if ((pin->pio->PIO_ODSR & pin->mask) == 0) {
 
         return 0;
@@ -380,3 +357,21 @@ unsigned char PIO_GetOutputDataStatus(const Pin *pin)
         return 1;
     }
 }
+
+//------------------------------------------------------------------------------
+/// Returns the value of ISR for the PIO controller of the pin.
+/// Reading this register acknoledges all the ITs.
+/// \param pin  Pointer to a Pin instance describing one or more pins.
+//------------------------------------------------------------------------------
+unsigned int PIO_GetISR(const Pin *pin)
+{
+	if(pin != NULL)
+	{
+		return (pin->pio->PIO_ISR);
+	}
+	else
+	{
+		return 0;
+	}
+}
+

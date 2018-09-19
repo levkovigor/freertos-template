@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- *         ATMEL Microcontroller Software Support 
+ *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2008, Atmel Corporation
  *
@@ -41,21 +41,21 @@
 /// -# Uses the TRACE_DEBUG(), TRACE_INFO(), TRACE_WARNING(), TRACE_ERROR()
 ///    TRACE_FATAL() macros to output traces throughout the program.
 /// -# Each type of trace has a level : Debug 5, Info 4, Warning 3, Error 2
-///    and Fatal 1. Disable a group of traces by changing the value of 
-///    TRACE_LEVEL during compilation; traces with a level bigger than TRACE_LEVEL 
+///    and Fatal 1. Disable a group of traces by changing the value of
+///    TRACE_LEVEL during compilation; traces with a level bigger than TRACE_LEVEL
 ///    are not generated. To generate no trace, use the reserved value 0.
 /// -# Trace disabling can be static or dynamic. If dynamic disabling is selected
 ///    the trace level can be modified in runtime. If static disabling is selected
 ///    the disabled traces are not compiled.
 ///
 /// !Trace level description
-/// -# TRACE_DEBUG (5): Traces whose only purpose is for debugging the program, 
+/// -# TRACE_DEBUG (5): Traces whose only purpose is for debugging the program,
 ///    and which do not produce meaningful information otherwise.
-/// -# TRACE_INFO (4): Informational trace about the program execution. Should  
+/// -# TRACE_INFO (4): Informational trace about the program execution. Should
 ///    enable the user to see the execution flow.
 /// -# TRACE_WARNING (3): Indicates that a minor error has happened. In most case
 ///    it can be discarded safely; it may even be expected.
-/// -# TRACE_ERROR (2): Indicates an error which may not stop the program execution, 
+/// -# TRACE_ERROR (2): Indicates an error which may not stop the program execution,
 ///    but which indicates there is a problem with the code.
 /// -# TRACE_FATAL (1): Indicates a major error which prevents the program from going
 ///    any further.
@@ -69,29 +69,18 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <board.h>
-#include <pio/pio.h>
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/peripherals/dbgu/dbgu.h"
+#include "at91/peripherals/pio/pio.h"
+
 #include <stdio.h>
-
-// Select the trace interface
-// (add usart.o file in makefile if Usart interface is selected)
-#define TRACE_DBGU 1
-//#define TRACE_USART_0 1
-//#define TRACE_USART_1 1
-//#define TRACE_USART_2 1
-
-#if defined(TRACE_DBGU)
-#include <dbgu/dbgu.h>
-#else
-#include <usart/usart.h>
-#endif
 
 //------------------------------------------------------------------------------
 //         Global Definitions
 //------------------------------------------------------------------------------
 
 /// Softpack Version
-#define SOFTPACK_VERSION "1.8"
+#define SOFTPACK_VERSION "1.5"
 
 #define TRACE_LEVEL_DEBUG      5
 #define TRACE_LEVEL_INFO       4
@@ -101,7 +90,7 @@
 #define TRACE_LEVEL_NO_TRACE   0
 
 // By default, all traces are output except the debug one.
-#if !defined(TRACE_LEVEL)    
+#if !defined(TRACE_LEVEL)
 #define TRACE_LEVEL TRACE_LEVEL_INFO
 #endif
 
@@ -115,126 +104,56 @@
 #endif
 
 #undef NOTRACE
-#if (DYN_TRACES==0)
-    #if (TRACE_LEVEL == TRACE_LEVEL_NO_TRACE)
-        #define NOTRACE
-    #endif
+#if (TRACE_LEVEL == TRACE_LEVEL_NO_TRACE)
+#define NOTRACE
 #endif
+
+
 
 //------------------------------------------------------------------------------
 //         Global Macros
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-/// Initializes the trace for normal project
+/// Initializes the DBGU
 /// \param mode  DBGU mode.
 /// \param baudrate  DBGU baudrate.
 /// \param mck  Master clock frequency.
 //------------------------------------------------------------------------------
-#if defined(TRACE_DBGU)
-    #define TRACE_CONFIGURE(mode, baudrate, mck) { \
-        const Pin pinsDbgu[] = {PINS_DBGU}; \
-        PIO_Configure(pinsDbgu, PIO_LISTSIZE(pinsDbgu)); \
-        DBGU_Configure(mode, baudrate, mck); \
+#define TRACE_CONFIGURE(mode, baudrate, mck) { \
+    const Pin pinsDbgu[] = {PINS_DBGU}; \
+    PIO_Configure(pinsDbgu, PIO_LISTSIZE(pinsDbgu)); \
+    DBGU_Configure(mode, baudrate, mck); \
     }
-#elif defined(TRACE_USART_0)
-    #define TRACE_CONFIGURE(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART0_TXD, PIN_USART0_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US0;\
-        AT91C_BASE_US0->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US0,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US0,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US0,1);\
-    }
-#elif defined(TRACE_USART_1)
-    #define TRACE_CONFIGURE(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART1_TXD, PIN_USART1_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US1;\
-        AT91C_BASE_US1->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US1,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US1,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US1,1);\
-    }
-#elif defined(TRACE_USART_2)
-    #define TRACE_CONFIGURE(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART2_TXD, PIN_USART2_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US2;\
-        AT91C_BASE_US2->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US2,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US2,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US2,1);\
-    }
-#endif
 
 //------------------------------------------------------------------------------
-/// Initializes the trace for ISP project
+/// Initializes the DBGU for ISP project
 /// \param mode  DBGU mode.
 /// \param baudrate  DBGU baudrate.
 /// \param mck  Master clock frequency.
 //------------------------------------------------------------------------------
-#if (TRACE_LEVEL==0) && (DYN_TRACES==0)
-    #define TRACE_CONFIGURE_ISP(mode, baudrate, mck) {}
-#elif defined(TRACE_DBGU)
-    #define TRACE_CONFIGURE_ISP(mode, baudrate, mck) { \
-        const Pin pinsDbgu[] = {PINS_DBGU}; \
-        PIO_Configure(pinsDbgu, PIO_LISTSIZE(pinsDbgu)); \
-        DBGU_Configure(mode, baudrate, mck); \
-    }
-#elif defined(TRACE_USART_0)
-    #define TRACE_CONFIGURE_ISP(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART0_TXD, PIN_USART0_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US0;\
-        AT91C_BASE_US0->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US0,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US0,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US0,1);\
-    }
-#elif defined(TRACE_USART_1)
-    #define TRACE_CONFIGURE_ISP(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART1_TXD, PIN_USART1_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US1;\
-        AT91C_BASE_US1->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US1,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US1,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US1,1);\
-    }
-#elif defined(TRACE_USART_2)
-    #define TRACE_CONFIGURE_ISP(mode, baudrate, mck) { \
-        const Pin pinsUsart[] = {PIN_USART2_TXD, PIN_USART2_RXD}; \
-        AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_US2;\
-        AT91C_BASE_US2->US_IDR = 0xFFFFFFFF;\
-        PIO_Configure(pinsUsart, PIO_LISTSIZE(pinsUsart)); \
-        USART_Configure(AT91C_BASE_US2,USART_MODE_ASYNCHRONOUS, baudrate, mck); \
-        USART_SetTransmitterEnabled(AT91C_BASE_US2,1);\
-        USART_SetReceiverEnabled(AT91C_BASE_US2,1);\
+#if (TRACE_LEVEL==0) && (DYNTRACE==0)
+#define TRACE_CONFIGURE_ISP(mode, baudrate, mck) {}
+#else
+#define TRACE_CONFIGURE_ISP(mode, baudrate, mck) { \
+    const Pin pinsDbgu[] = {PINS_DBGU}; \
+    PIO_Configure(pinsDbgu, PIO_LISTSIZE(pinsDbgu)); \
+    DBGU_Configure(mode, baudrate, mck); \
     }
 #endif
 
-//------------------------------------------------------------------------------
-/// Macros TRACE_PutChar & TRACE_GetChar & TRACE_IsRxReady
-//------------------------------------------------------------------------------
-#if defined(TRACE_DBGU)    
-    #define TRACE_PutChar(c)  DBGU_PutChar(c)
-    #define TRACE_GetChar()   DBGU_GetChar()
-    #define TRACE_IsRxReady() DBGU_IsRxReady()
-#elif defined(TRACE_USART_0)
-    #define TRACE_PutChar(c)  USART_PutChar(AT91C_BASE_US0, c)
-    #define TRACE_GetChar()   USART_GetChar(AT91C_BASE_US0)
-    #define TRACE_IsRxReady() USART_IsRxReady(AT91C_BASE_US0)
-#elif defined(TRACE_USART_1)
-    #define TRACE_PutChar(c)  USART_PutChar(AT91C_BASE_US1, c)
-    #define TRACE_GetChar()   USART_GetChar(AT91C_BASE_US1)
-    #define TRACE_IsRxReady() USART_IsRxReady(AT91C_BASE_US1)
-#elif defined(TRACE_USART_2)
-    #define TRACE_PutChar(c)  USART_PutChar(AT91C_BASE_US2, c)
-    #define TRACE_GetChar()   USART_GetChar(AT91C_BASE_US2)
-    #define TRACE_IsRxReady() USART_IsRxReady(AT91C_BASE_US2)
-#endif
+// Akhil: Added some functions to manipulate the terminal.
+#define ESC_CODE 27
+#define TRACE_RESET_COLOURS	printf("\033[0m \n\r")
+#define TRACE_CLEAR_SCREEN	printf("%c[2J \n\r", ESC_CODE)
+#define TRACE_MOVE_CURSOR(row,col) printf("%c[%d;%dH", ESC_CODE, row, col)
+
+#define TRACE_RESET_TERMINAL { \
+	TRACE_CLEAR_SCREEN; \
+	TRACE_RESET_COLOURS; \
+	TRACE_MOVE_CURSOR(0, 0); \
+}
+// Akhil: End of functions to manipulate the terminal.
 
 //------------------------------------------------------------------------------
 /// Outputs a formatted string using <printf> if the log level is high
@@ -247,17 +166,15 @@
 // Empty macro
 #define TRACE_DEBUG(...)      { }
 #define TRACE_INFO(...)       { }
-#define TRACE_WARNING(...)    { }               
+#define TRACE_WARNING(...)    { }
 #define TRACE_ERROR(...)      { }
 #define TRACE_FATAL(...)      { while(1); }
-#define TRACE_PERM(...)       { }
 
 #define TRACE_DEBUG_WP(...)   { }
 #define TRACE_INFO_WP(...)    { }
 #define TRACE_WARNING_WP(...) { }
 #define TRACE_ERROR_WP(...)   { }
 #define TRACE_FATAL_WP(...)   { while(1); }
-#define TRACE_PERM_WP(...)    { }
 
 #elif (DYN_TRACES == 1)
 
@@ -267,14 +184,12 @@
 #define TRACE_WARNING(...)    { if (traceLevel >= TRACE_LEVEL_WARNING) { printf("-W- " __VA_ARGS__); } }
 #define TRACE_ERROR(...)      { if (traceLevel >= TRACE_LEVEL_ERROR)   { printf("-E- " __VA_ARGS__); } }
 #define TRACE_FATAL(...)      { if (traceLevel >= TRACE_LEVEL_FATAL)   { printf("-F- " __VA_ARGS__); while(1); } }
-#define TRACE_PERM_WP(...)    { printf("-P- " __VA_ARGS__); }
 
 #define TRACE_DEBUG_WP(...)   { if (traceLevel >= TRACE_LEVEL_DEBUG)   { printf(__VA_ARGS__); } }
 #define TRACE_INFO_WP(...)    { if (traceLevel >= TRACE_LEVEL_INFO)    { printf(__VA_ARGS__); } }
 #define TRACE_WARNING_WP(...) { if (traceLevel >= TRACE_LEVEL_WARNING) { printf(__VA_ARGS__); } }
 #define TRACE_ERROR_WP(...)   { if (traceLevel >= TRACE_LEVEL_ERROR)   { printf(__VA_ARGS__); } }
 #define TRACE_FATAL_WP(...)   { if (traceLevel >= TRACE_LEVEL_FATAL)   { printf(__VA_ARGS__); while(1); } }
-#define TRACE_PERM_WP(...)    { printf(__VA_ARGS__); }
 
 #else
 
@@ -319,9 +234,6 @@
 #define TRACE_FATAL_WP(...)   { while(1); }
 #endif
 
-#define TRACE_PERM(...)       { printf("-P " __VA_ARGS__); }
-#define TRACE_PERM_WP(...)    { printf(__VA_ARGS__); }
-
 #endif
 
 
@@ -333,20 +245,6 @@
 #if !defined(NOTRACE) && (DYN_TRACES == 1)
     extern unsigned int traceLevel;
 #endif
-
-//------------------------------------------------------------------------------
-//         Global Functions
-//------------------------------------------------------------------------------
-
-extern void          TRACE_DumpFrame(unsigned char *pFrame, unsigned int size);
-
-extern void          TRACE_DumpMemory(unsigned char *pBuffer, unsigned int size, unsigned int address);
-
-extern unsigned char TRACE_GetInteger(unsigned int *pValue);
-
-extern unsigned char TRACE_GetIntegerMinMax(unsigned int *pValue, unsigned int min, unsigned int max);
-
-extern unsigned char TRACE_GetHexa32(unsigned int *pValue);
 
 #endif //#ifndef TRACE_H
 

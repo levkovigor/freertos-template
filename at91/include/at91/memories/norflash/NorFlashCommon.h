@@ -39,11 +39,11 @@
 ///  
 /// -# WriteRawData() is used to write data to the %NorFlash device.
 /// -# ReadRawData() is used to read data from the %NorFlash device.
-/// -# The specified address for read/write opertion is an linear byte
-///    address of targer application byte address space represented by 
+/// -# The specified address for read/write operation is an linear byte
+///    address of target application byte address space represented by
 ///    WORD((8-bit, 16-bit, 32-bit). The start (base) address of the 
 ///    flash memory in this address space is defined in board.h file 
-///    as BOARD_NORFLASH_ADDR and users might need to change it.
+///    as BOARD_NORFLASH_BASE_ADDR and users might need to change it.
 /// -# WriteCommand() is used to write a command to specified command 
 ///    address.
 /// 

@@ -49,7 +49,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include <usb/common/core/USBGenericRequest.h>
+#include "at91/usb/common/core/USBGenericRequest.h"
 
 //------------------------------------------------------------------------------
 //         Definitions

@@ -43,11 +43,8 @@
 /// second group is then split into several sub-directories, depending on 
 /// the nature of the software module. Currently, the following directories
 /// are defined:
-///    - components
-///    - drivers
 ///    - memories
 ///    - peripherals
-///    - usb
 ///    - utility
 ///
 /// For more information about what a particular group contains, please refer to

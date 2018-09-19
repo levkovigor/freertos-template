@@ -38,7 +38,7 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "USBGenericDescriptor.h"
+#include "at91/usb/common/core/USBGenericDescriptor.h"
 
 //------------------------------------------------------------------------------
 //         Exported functions

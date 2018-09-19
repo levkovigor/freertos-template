@@ -64,6 +64,9 @@
 #ifndef NORFLASHAMD_H
 #define NORFLASHAMD_H
 
+#include "at91/memories/norflash/NorFlashCFI.h"
+#include "at91/memories/norflash/NorFlashApi.h"
+
 //------------------------------------------------------------------------------
 //         Local functions
 //------------------------------------------------------------------------------
@@ -86,13 +89,11 @@ unsigned char AMD_Write_Data(
     unsigned char *buffer,
     unsigned int size);
 
-const struct NorFlashOperations amdOperations = {
-   AMD_Reset, 
-   AMD_Write_Data,
-   AMD_ReadManufactoryId, 
-   AMD_ReadDeviceID,
-   AMD_EraseChip,
-   AMD_EraseSector
-};
+unsigned char AMD_Program(
+    struct NorFlashInfo *pNorFlashInfo,
+    unsigned int address,
+    unsigned int data);
+
+const struct NorFlashOperations amdOperations;
 
 #endif //#ifndef NORFLASHAMD_H

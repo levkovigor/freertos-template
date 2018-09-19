@@ -31,45 +31,27 @@
 //      Headers
 //------------------------------------------------------------------------------
 
-#include "USBDDriver.h"
-#include "USBDDriverCallbacks.h"
-#include "USBD.h"
-#include <board.h>
-#include <utility/trace.h>
-#include <usb/common/core/USBGenericDescriptor.h>
-#include <usb/common/core/USBDeviceDescriptor.h>
-#include <usb/common/core/USBConfigurationDescriptor.h>
-#include <usb/common/core/USBDeviceQualifierDescriptor.h>
-#include <usb/common/core/USBEndpointDescriptor.h>
-#include <usb/common/core/USBFeatureRequest.h>
-#include <usb/common/core/USBSetAddressRequest.h>
-#include <usb/common/core/USBGetDescriptorRequest.h>
-#include <usb/common/core/USBSetConfigurationRequest.h>
-#include <usb/common/core/USBInterfaceRequest.h>
+#include "at91/usb/device/core/USBDDriver.h"
+#include "at91/usb/device/core/USBDDriverCallbacks.h"
+#include "at91/usb/device/core/USBD.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/utility/trace.h"
+#include "at91/usb/common/core/USBGenericDescriptor.h"
+#include "at91/usb/common/core/USBDeviceDescriptor.h"
+#include "at91/usb/common/core/USBConfigurationDescriptor.h"
+#include "at91/usb/common/core/USBDeviceQualifierDescriptor.h"
+#include "at91/usb/common/core/USBEndpointDescriptor.h"
+#include "at91/usb/common/core/USBFeatureRequest.h"
+#include "at91/usb/common/core/USBSetAddressRequest.h"
+#include "at91/usb/common/core/USBGetDescriptorRequest.h"
+#include "at91/usb/common/core/USBSetConfigurationRequest.h"
+#include "at91/usb/common/core/USBInterfaceRequest.h"
 
 #include <string.h>
 
 //------------------------------------------------------------------------------
 //      Local functions
 //------------------------------------------------------------------------------
-#if defined(CHIP_USB_OTGHS)
-static unsigned char otg_features_supported = 0;
-#endif
-
-//------------------------------------------------------------------------------
-/// Send a NULL packet
-//------------------------------------------------------------------------------
-static void TerminateCtrlInWithNull(void *pArg,
-                                    unsigned char status,
-                                    unsigned int transferred,
-                                    unsigned int remaining)
-{
-    USBD_Write(0, // Endpoint #0
-               0, // No data buffer
-               0, // No data buffer
-               (TransferCallback) 0,
-               (void *)  0);
-}
 
 //------------------------------------------------------------------------------
 /// Configures the device by setting it into the Configured state and
@@ -79,7 +61,7 @@ static void TerminateCtrlInWithNull(void *pArg,
 //------------------------------------------------------------------------------
 static void SetConfiguration(USBDDriver *pDriver, unsigned char cfgnum)
 {
-    USBEndpointDescriptor *pEndpoints[CHIP_USB_NUMENDPOINTS+1];
+    USBEndpointDescriptor *pEndpoints[BOARD_USB_NUMENDPOINTS+1];
     const USBConfigurationDescriptor *pConfiguration;
 
     // Use different descriptor depending on device speed
@@ -136,10 +118,9 @@ static void GetConfiguration(const USBDDriver *pDriver)
 //------------------------------------------------------------------------------
 static void GetDeviceStatus(const USBDDriver *pDriver)
 {
-    static unsigned short data;
+    unsigned short data = 0;
     const USBConfigurationDescriptor *pConfiguration;
 
-    data = 0;
     // Use different configuration depending on device speed
     if (USBD_IsHighSpeed()) {
 
@@ -175,11 +156,10 @@ static void GetDeviceStatus(const USBDDriver *pDriver)
 //------------------------------------------------------------------------------
 static void GetEndpointStatus(unsigned char bEndpoint)
 {
-    static unsigned short data;
+    unsigned short data = 0;
 
-    data = 0;
     // Check if the endpoint exists
-    if (bEndpoint > CHIP_USB_NUMENDPOINTS) {
+    if (bEndpoint > BOARD_USB_NUMENDPOINTS) {
 
         USBD_Stall(0);
     }
@@ -207,7 +187,7 @@ static void GetEndpointStatus(unsigned char bEndpoint)
 static void GetDescriptor(
     const USBDDriver *pDriver,
     unsigned char type,
-    unsigned char indexRDesc,
+    unsigned char index,
     unsigned int length)
 {
     const USBDeviceDescriptor *pDevice;
@@ -216,9 +196,8 @@ static void GetDescriptor(
     const USBConfigurationDescriptor *pOtherSpeed;
     const USBGenericDescriptor **pStrings =
         (const USBGenericDescriptor **) pDriver->pDescriptors->pStrings;
-    const USBGenericDescriptor *pString;
     unsigned char numStrings = pDriver->pDescriptors->numStrings;
-    unsigned char terminateWithNull = 0;
+    const USBGenericDescriptor *pString;
 
     // Use different set of descriptors depending on device speed
     if (USBD_IsHighSpeed()) {
@@ -259,13 +238,8 @@ static void GetDescriptor(
             if (length > USBConfigurationDescriptor_GetTotalLength(pConfiguration)) {
 
                 length = USBConfigurationDescriptor_GetTotalLength(pConfiguration);
-                terminateWithNull = ((length % pDevice->bMaxPacketSize0) == 0);
             }
-            USBD_Write(0,
-                       pConfiguration,
-                       length,
-                       terminateWithNull ? TerminateCtrlInWithNull : 0,
-                       0);
+            USBD_Write(0, pConfiguration, length, 0, 0);
             break;
 
         case USBGenericDescriptor_DEVICEQUALIFIER:
@@ -301,39 +275,29 @@ static void GetDescriptor(
                 if (length > USBConfigurationDescriptor_GetTotalLength(pOtherSpeed)) {
 
                     length = USBConfigurationDescriptor_GetTotalLength(pOtherSpeed);
-                    terminateWithNull = ((length % pDevice->bMaxPacketSize0) == 0);
                 }
-                USBD_Write(0,
-                           pOtherSpeed,
-                           length,
-                           terminateWithNull ? TerminateCtrlInWithNull : 0,
-                           0);
+                USBD_Write(0, pOtherSpeed, length, 0, 0);
             }
             break;
 
         case USBGenericDescriptor_STRING:
-            TRACE_INFO_WP("Str%d ", indexRDesc);
+            TRACE_INFO_WP("Str%d ", index);
 
             // Check if descriptor exists
-            if (indexRDesc >= numStrings) {
+            if (index > numStrings) {
 
                 USBD_Stall(0);
             }
             else {
 
-                pString = pStrings[indexRDesc];
+                pString = pStrings[index];
 
                 // Adjust length and send descriptor
                 if (length > USBGenericDescriptor_GetLength(pString)) {
 
                     length = USBGenericDescriptor_GetLength(pString);
-                    terminateWithNull = ((length % pDevice->bMaxPacketSize0) == 0);
                 }
-                USBD_Write(0,
-                           pString,
-                           length,
-                           terminateWithNull ? TerminateCtrlInWithNull : 0,
-                           0);
+                USBD_Write(0, pString, length, 0, 0);
             }
             break;
 
@@ -401,7 +365,7 @@ static void GetInterface(
     }
 }
 
-#if defined(CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+#ifdef BOARD_USB_UDPHS
 //------------------------------------------------------------------------------
 // Performs the selected test on the USB device (high-speed only).
 // \param test  Test selector value.
@@ -430,7 +394,7 @@ static void USBDDriver_Test(unsigned char test)
             // Tst PACKET
             USBD_Test(USBFeatureRequest_TESTPACKET);
             while (1);
-            //break; not reached
+            break;
 
         case USBFeatureRequest_TESTJ:
             //Test mode Test_J:
@@ -442,7 +406,7 @@ static void USBDDriver_Test(unsigned char test)
             // Tst J
             USBD_Test(USBFeatureRequest_TESTJ);
             while (1);
-            //break; not reached
+            break;
 
         case USBFeatureRequest_TESTK:
             //Test mode Test_K:
@@ -453,7 +417,7 @@ static void USBDDriver_Test(unsigned char test)
             USBD_Test(USBFeatureRequest_TESTSENDZLP);
             USBD_Test(USBFeatureRequest_TESTK);
             while (1);
-            //break; not reached
+            break;
 
         case USBFeatureRequest_TESTSE0NAK:
             //Test mode Test_SE0_NAK:
@@ -465,15 +429,14 @@ static void USBDDriver_Test(unsigned char test)
             //determined to be correct) within the normal allowed device response time. This enables testing of
             //the device squelch level circuitry and, additionally, provides a general purpose stimulus/response
             //test for basic functional testing.
+            USBD_Test(USBFeatureRequest_TESTSE0NAK);
             // Send a ZLP
             USBD_Test(USBFeatureRequest_TESTSENDZLP);
-            // Test SE0_NAK
-            USBD_Test(USBFeatureRequest_TESTSE0NAK);
             while (1);
-            //break; not reached
+            break;
 
         default:
-            USBD_Stall(0);
+            USBD_Stall( 0 );
             break;
 
     }
@@ -533,7 +496,7 @@ void USBDDriver_RequestHandler(
     unsigned char eptnum;
     unsigned char setting;
     unsigned char type;
-    unsigned char indexDesc;
+    unsigned char index;
     unsigned int length;
     unsigned int address;
 
@@ -547,9 +510,9 @@ void USBDDriver_RequestHandler(
 
             // Send the requested descriptor
             type = USBGetDescriptorRequest_GetDescriptorType(pRequest);
-            indexDesc = USBGetDescriptorRequest_GetDescriptorIndex(pRequest);
+            index = USBGetDescriptorRequest_GetDescriptorIndex(pRequest);
             length = USBGenericRequest_GetLength(pRequest);
-            GetDescriptor(pDriver, type, indexDesc, length);
+            GetDescriptor(pDriver, type, index, length);
             break;
 
         case USBGenericRequest_SETADDRESS:
@@ -649,17 +612,18 @@ void USBDDriver_RequestHandler(
                 break;
 
             case USBFeatureRequest_ENDPOINTHALT:
-                TRACE_INFO_WP("Halt ");
+                TRACE_INFO_WP("Ept ");
+
                 // Halt endpoint
                 USBD_Halt(USBGenericRequest_GetEndpointNumber(pRequest));
                 USBD_Write(0, 0, 0, 0, 0);
                 break;
 
-#if defined(CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+#if defined(BOARD_USB_UDPHS)
 
             case USBFeatureRequest_TESTMODE:
-                // 7.1.20 Test Mode Support, 9.4.9 SetFeature
-                if ((USBGenericRequest_GetRecipient(pRequest) == USBGenericRequest_DEVICE)
+                // 7.1.20 Test Mode Support
+                if ((USBGenericRequest_GetType(pRequest) == USBGenericRequest_DEVICE)
                     && ((USBGenericRequest_GetIndex(pRequest) & 0x000F) == 0)) {
 
                     // Handle test request
@@ -671,23 +635,7 @@ void USBDDriver_RequestHandler(
                 }
                 break;
 #endif
-#if defined(CHIP_USB_OTGHS)
-            case USBFeatureRequest_OTG_B_HNP_ENABLE:
-                    TRACE_INFO_WP("OTG_B_HNP_ENABLE ");
-                    otg_features_supported |= 1<<USBFeatureRequest_OTG_B_HNP_ENABLE;
-                    USBD_Write(0, 0, 0, 0, 0);
-                break;
-            case USBFeatureRequest_OTG_A_HNP_SUPPORT:
-                    TRACE_INFO_WP("OTG_A_HNP_SUPPORT ");
-                    otg_features_supported |= 1<<USBFeatureRequest_OTG_A_HNP_SUPPORT;
-                    USBD_Write(0, 0, 0, 0, 0);
-                break;
-            case USBFeatureRequest_OTG_A_ALT_HNP_SUPPORT:
-                    TRACE_INFO_WP("OTG_A_ALT_HNP_SUPPORT ");
-                    otg_features_supported |= 1<<USBFeatureRequest_OTG_A_ALT_HNP_SUPPORT;
-                    USBD_Write(0, 0, 0, 0, 0);
-                break;
-#endif
+
             default:
                 TRACE_WARNING(
                           "USBDDriver_RequestHandler: Unknown feature selector (%d)\n\r",
@@ -731,23 +679,4 @@ unsigned char USBDDriver_IsRemoteWakeUpEnabled(const USBDDriver *pDriver)
     return pDriver->isRemoteWakeUpEnabled;
 }
 
-#if defined(CHIP_USB_OTGHS)
-//------------------------------------------------------------------------------
-/// Return OTG features supported
-/// \return the OTG features
-//------------------------------------------------------------------------------
-unsigned char USBDDriver_returnOTGFeatures(void)
-{
-    return otg_features_supported;
-}
-
-//------------------------------------------------------------------------------
-/// Clear OTG features supported
-/// \return none
-//------------------------------------------------------------------------------
-void USBDDriver_clearOTGFeatures(void)
-{
-    otg_features_supported = 0;
-}
-#endif
 

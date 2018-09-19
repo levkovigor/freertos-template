@@ -31,17 +31,18 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "NorFlashApi.h"
-#include "NorFlashAmd.h"
-#include "NorFlashIntel.h"
-#include "NorFlashCommon.h"
-#include <utility/trace.h>
+#include "at91/memories/norflash/NorFlashApi.h"
+#include "at91/memories/norflash/NorFlashAmd.h"
+#include "at91/memories/norflash/NorFlashIntel.h"
+#include "at91/memories/norflash/NorFlashCommon.h"
+#include "at91/utility/trace.h"
+
 #include <string.h>
 
 //------------------------------------------------------------------------------
 //         Internal definitions
 //------------------------------------------------------------------------------
-#define DUMP_CFI
+//#define DUMP_CFI
 
 //------------------------------------------------------------------------------
 //         Local functions
@@ -228,7 +229,7 @@ unsigned short NorFlash_GetDeviceSectorInRegion(
         numBlockPerRegion = (pNorFlashInfo->cfiDescription.norFlashCfiDeviceGeometry.eraseRegionInfo[i]).Y + 1;
         for (j = 0; j < numBlockPerRegion; j++) {
             size+= (pNorFlashInfo->cfiDescription.norFlashCfiDeviceGeometry.eraseRegionInfo[i].Z) * 256 ;
-            if(size > memoryOffset) {
+            if(size >= memoryOffset) {
                 done = 1;
                 break;
             }
@@ -363,8 +364,7 @@ unsigned char NorFlash_CFI_Detect(
     if (pNorFlash->norFlashInfo.cfiDescription.norFlashCfiQueryInfo.primaryCode == CMD_SET_AMD) {
         pNorFlash->pOperations = &amdOperations;
     }
-    else if ((pNorFlash->norFlashInfo.cfiDescription.norFlashCfiQueryInfo.primaryCode == CMD_SET_INTEL_EXT)
-     || (pNorFlash->norFlashInfo.cfiDescription.norFlashCfiQueryInfo.primaryCode == CMD_SET_INTEL)) {
+    else if (pNorFlash->norFlashInfo.cfiDescription.norFlashCfiQueryInfo.primaryCode == CMD_SET_INTEL_EXT) {
         pNorFlash->pOperations = &intelOperations;
     }
     else {

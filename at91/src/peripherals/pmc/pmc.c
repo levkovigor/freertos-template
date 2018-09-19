@@ -31,13 +31,13 @@
 //         Headers
 //------------------------------------------------------------------------------
 
-#include "pmc.h"
-#include <board.h>
-#include <utility/assert.h>
-#include <utility/trace.h>
+#include "at91/peripherals/pmc/pmc.h"
+#include "at91/boards/ISIS_OBC_G20/board.h"
+#include "at91/utility/assert.h"
+#include "at91/utility/trace.h"
 
 #ifdef CP15_PRESENT
-#include <cp15/cp15.h>
+#include "at91/peripherals/cp15/cp15.h"
 #endif
 
 #define MASK_STATUS 0x3FFFFFFC
@@ -101,7 +101,7 @@ void PMC_EnablePeripheral(unsigned int id)
 {
     SANITY_CHECK(id < 32);
 
-    if ((AT91C_BASE_PMC->PMC_PCSR & (1 << id)) == (1 << id)) {
+    if ((AT91C_BASE_PMC->PMC_PCSR & (1 << id)) == (unsigned int)(1 << id)) {
 
         TRACE_INFO("PMC_EnablePeripheral: clock of peripheral"
                    " %u is already enabled\n\r",
@@ -123,7 +123,7 @@ void PMC_DisablePeripheral(unsigned int id)
 {
     SANITY_CHECK(id < 32);
 
-    if ((AT91C_BASE_PMC->PMC_PCSR & (1 << id)) != (1 << id)) {
+    if ((AT91C_BASE_PMC->PMC_PCSR & (1 << id)) != (unsigned int)(1 << id)) {
 
         TRACE_INFO("PMC_DisablePeripheral: clock of peripheral"
                    " %u is not enabled\n\r",
@@ -177,11 +177,9 @@ unsigned int PMC_IsPeriphEnabled(unsigned int id)
 //------------------------------------------------------------------------------
 void PMC_CPUInIdleMode(void)
 {
-#ifndef CP15_PRESENT	
     PMC_DisableProcessorClock();
-#else
-    AT91C_BASE_PMC->PMC_SCDR = AT91C_PMC_PCK; 
-    CP15_WaitForInterrupt();
+#ifdef CP15_PRESENT
+    _waitForInterrupt();
 #endif
 }
 
