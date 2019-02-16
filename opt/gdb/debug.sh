@@ -2,6 +2,8 @@
 
 img=$1
 
+interactive=$2
+
 cmd=cmd.gdb
 
 sdram_config="./opt/gdb/at91sam9g20-ek-sdram.gdb"
@@ -28,4 +30,4 @@ then
     exit
 fi
 
-exec gdb-multiarch -x cmd.gdb -ex reset $img
+exec gdb-multiarch -x cmd.gdb -ex reset $interactive $img
