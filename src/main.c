@@ -1,29 +1,21 @@
-#include <board.h>
-#include <cp15/cp15.h>
-#include <pmc/pmc.h>
-#include <pio/pio.h>
-#include <pio/pio_it.h>
-#include <pit/pit.h>
-#include <tc/tc.h>
-#include <aic/aic.h>
-#include <utility/trace.h>
-#include <stdio.h>
+#include <at91/utility/trace.h>
+#include <at91/peripherals/cp15/cp15.h>
+#include <at91/utility/exithandler.h>
+#include <at91/commons.h>
 
 #include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 #include <freertos/semphr.h>
-#include <freertos/queue.h>
-#include <freertos/projdefs.h>
+#include <freertos/task.h>
 
-#include <hal/boolean.h>
-#include <hal/version/version.h>
-
+#include <hal/Timing/WatchDogTimer.h>
 #include <hal/Drivers/LED.h>
-#include <hal/interruptPriorities.h>
 #include <hal/boolean.h>
 #include <hal/Utility/util.h>
-#include <hal/Timing/WatchDogTimer.h>
-#include "checksumTest.h"
+
+#include <stdio.h>
+#include <stddef.h>
+#include <string.h>
+
 
 #define ENABLE_MAIN_TRACES 1
 #if ENABLE_MAIN_TRACES
@@ -40,38 +32,39 @@
 #define MAIN_TRACE_FATAL		TRACE_FATAL
 #endif
 
-
-const signed char * const task_name_led_blink =
-  (const signed char * const ) "led_blink";
-
-void *task_led_blink(){
-  WDT_startWatchdogKickTask(10 / portTICK_RATE_MS, FALSE);
-  checksumTest();
-  LED_start();
-  LED_glow(led_1);
-  do{
-    printf("Test\n\r");
+void task (void * args) {
+  
+  configASSERT(args==NULL);
+  
+  LED_glow (led_1);
+  
+  do {
     LED_toggle(led_1);
     vTaskDelay(2000);
-  }
-  while(1);
-  return NULL;
+  } while(1);
+
 }
 
 
 int main(void)
 {
-  // DBGU output configuration
+
   TRACE_CONFIGURE_ISP(DBGU_STANDARD, 115200, BOARD_MCK);
+
   CP15_Enable_I_Cache();
 
   printf("-- ISIS Template Project %s --\n\r", SOFTPACK_VERSION);
   printf("-- %s\n\r", BOARD_NAME);
   printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
-  WDT_start();
-  
-  xTaskCreate(task_led_blink, task_name_led_blink, configMINIMAL_STACK_SIZE,
+  WDT_startWatchdogKickTask(10 / portTICK_RATE_MS, FALSE);
+
+  LED_start();
+
+  xTaskCreate(task,
+	      (const signed char*) "task", configMINIMAL_STACK_SIZE,
 	      NULL, configMAX_PRIORITIES - 1, NULL );
+
   vTaskStartScheduler();
+
 }

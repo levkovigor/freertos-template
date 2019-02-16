@@ -81,16 +81,28 @@ OBJCOPY	= $(CROSS_COMPILE)objcopy
 
 # Flags
 
-INCLUDES	=  -I$(AT91LIB)/boards/$(BOARD)
-INCLUDES	+= -I$(AT91LIB)/peripherals
-INCLUDES	+= -I$(AT91LIB)/components
-INCLUDES	+= -I$(AT91LIB)
+INCLUDES	=  -I$(AT91LIB)/include/at91/boards/$(BOARD)
+INCLUDES	+= -I$(AT91LIB)/include/at91/peripherals
+INCLUDES	+= -I$(AT91LIB)/include/at91/components
+INCLUDES	+= -I$(AT91LIB)/include/at91
+INCLUDES	+= -I$(AT91LIB)/include/
+
 
 INCLUDES	+= -I$(FREERTOS)/portable/GCC/ARM9_AT91SAM9G20
 INCLUDES	+= -I$(FREERTOS)/portable/MemMang
 INCLUDES	+= -I$(FREERTOS)/portable/
 INCLUDES	+= -I$(FREERTOS)/include
 INCLUDES	+= -I$(FREERTOS)
+
+INCLUDES	+= -Ihal/include/hal/
+INCLUDES	+= -Ihal/include/
+
+INCLUDES	+= -Isatellite-subsystems/include/satellite-subsystems/
+INCLUDES	+= -Isatellite-subsystems/include/
+
+INCLUDES	+= -Imission-support/include/mission-support/
+INCLUDES	+= -Imission-support/include/
+
 INCLUDES	+= -Isrc/
 
 TARGET_OPTS = -mcpu=arm926ej-s
@@ -112,75 +124,19 @@ LDFLAGS += -g -Wl,-Map,$(OUTPUT).map -nostartfiles -Xlinker --gc-sections
 #-------------------------------------------------------------------------------
 
 # Directories where source files can be found
-UTILITY	= $(AT91LIB)/src/utility
-PERIPH	= $(AT91LIB)/src/peripherals
-BOARDS	= $(AT91LIB)/src/boards
-DRIVERS = $(AT91LIB)/src/drivers
-
-PORT	= $(FREERTOS)/src/portable/GCC/ARM9_AT91SAM9G20
-MEM_MGT	= $(FREERTOS)/src/portable/MemMang
-
 VPATH   = src/
-VPATH	+= $(UTILITY)
-VPATH	+= $(PERIPH)/dbgu
-VPATH	+= $(PERIPH)/irq
-VPATH	+= $(PERIPH)/aic
-VPATH	+= $(PERIPH)/pio
-VPATH	+= $(PERIPH)/pit
-VPATH	+= $(PERIPH)/tc
-VPATH	+= $(PERIPH)/pmc
-VPATH	+= $(PERIPH)/cp15
-VPATH	+= $(PERIPH)/usart
-VPATH	+= $(PERIPH)/twi
-VPATH	+= $(PERIPH)/systicks
-VPATH   += $(DRIVERS)/twi
-VPATH	+= $(BOARDS)/$(BOARD)
-VPATH	+= $(BOARDS)/$(BOARD)/$(CHIP)
-VPATH	+= $(MEM_MGT)
-VPATH	+= $(PORT)
-VPATH	+= $(FREERTOS)
-
+VPATH  	+= $(AT91LIB)/lib
+VPATH	+= $(FREERTOS)/lib
+VPATH 	+= hal/lib/
+VPATH 	+= satellite-subsystems/lib/
+VPATH	+= mission-support/lib/
 
 # Objects build from C source files
 C_OBJECTS	 = main.o
-C_OBJECTS	+= checksumTest.o
 
-# AT91LIB objects
-# C_OBJECTS	+= led.o
-# C_OBJECTS	+= stdio.o
-C_OBJECTS	+= dbgu.o
-C_OBJECTS	+= pio.o
-C_OBJECTS	+= pio_it.o
-C_OBJECTS	+= tc.o
-C_OBJECTS	+= pmc.o
-C_OBJECTS	+= board_lowlevel.o
-C_OBJECTS	+= trace.o
-C_OBJECTS	+= board_memories.o
-C_OBJECTS	+= aic.o
-C_OBJECTS	+= cp15.o
-C_OBJECTS	+= pit.o
-C_OBJECTS	+= usart_at91.o
-C_OBJECTS	+= twi_at91.o
-C_OBJECTS	+= math.o
-C_OBJECTS	+= syscalls.o
-C_OBJECTS	+= ExitHandler.o
 
-# FreeRTOS objects build from C source files
-C_OBJECTS	+= port.o
-C_OBJECTS	+= tasks.o
-C_OBJECTS	+= queue.o
-C_OBJECTS	+= event_groups.o
-C_OBJECTS	+= list.o
-C_OBJECTS	+= stream_buffer.o
-C_OBJECTS	+= timers.o
-C_OBJECTS	+= standardMemMang.o
-C_OBJECTS 	+= hooks.o
-C_OBJECTS	+= croutine.o
 # Objects build from assembly source files
 ASM_OBJECTS	= board_fstartup.o
-
-# AT91LIB objects built from assembly source files 
-ASM_OBJECTS	+= cp15_asm.o
 
 #Append OBJ and BIN directories to output filename
 OUTPUT	:= $(BIN)/$(OUTPUT)
@@ -197,7 +153,7 @@ define RULES
 C_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(C_OBJECTS))
 ASM_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(ASM_OBJECTS))
 
-$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lHALD
+$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lMissionSupportD -lSatelliteSubsystemsD -lHALD -lFreeRTOSD -lAt91D
 	$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
 	--specs=nano.specs -lc -u _printf_float -u _scanf_float -o $(OUTPUT)-$$@.elf $$^
 	$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin
