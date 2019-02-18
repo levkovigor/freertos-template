@@ -4,6 +4,7 @@
 # ISIS
 hal
 hcc
+freertos/lib
 satellite-subsystems
 mission-support
 at91/include/at91/boards/
