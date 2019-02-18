@@ -97,6 +97,10 @@ INCLUDES	+= -I$(FREERTOS)
 INCLUDES	+= -Ihal/include/hal/
 INCLUDES	+= -Ihal/include/
 
+INCLUDES	+= -Ihcc/include/hcc/
+INCLUDES	+= -Ihcc/include/psp/include
+INCLUDES	+= -Ihcc/include/
+
 INCLUDES	+= -Isatellite-subsystems/include/satellite-subsystems/
 INCLUDES	+= -Isatellite-subsystems/include/
 
@@ -128,6 +132,7 @@ VPATH   = src/
 VPATH  	+= $(AT91LIB)/lib
 VPATH	+= $(FREERTOS)/lib
 VPATH 	+= hal/lib/
+VPATH 	+= hcc/lib/
 VPATH 	+= satellite-subsystems/lib/
 VPATH	+= mission-support/lib/
 
@@ -153,7 +158,7 @@ define RULES
 C_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(C_OBJECTS))
 ASM_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(ASM_OBJECTS))
 
-$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lMissionSupportD -lSatelliteSubsystemsD -lHALD -lFreeRTOSD -lAt91D
+$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lMissionSupportD -lSatelliteSubsystemsD -lHCCD -lHALD -lFreeRTOSD -lAt91D
 	$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
 	--specs=nano.specs -lc -u _printf_float -u _scanf_float -o $(OUTPUT)-$$@.elf $$^
 	$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin

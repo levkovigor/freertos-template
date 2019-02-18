@@ -3,6 +3,7 @@
 
 # ISIS
 hal
+hcc
 satellite-subsystems
 mission-support
 at91/include/at91/boards/
