@@ -49,7 +49,7 @@
   exception handlers in src/boot_fstartup.S .
   
   As well, to improve portability some scripts where re-written in
-  bash i.e. debug.pl .
+  bash i.e. debug.pl.
   
   The following makefile targets : jlink, flashing, connect are only
   for convenience and call scripts for, respectively, start a j-link
