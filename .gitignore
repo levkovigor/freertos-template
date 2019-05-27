@@ -4,6 +4,7 @@
 # ISIS
 hal
 hcc
+pus
 freertos/lib
 satellite-subsystems
 mission-support
