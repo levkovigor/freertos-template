@@ -16,6 +16,14 @@
 #include <stddef.h>
 #include <string.h>
 
+#define FLASH_RAM
+
+#ifdef FLASH_RAM
+#include "low_level_ramflash.h"
+#endif
+
+
+#include "services.h"
 
 #define ENABLE_MAIN_TRACES 1
 #if ENABLE_MAIN_TRACES
@@ -40,6 +48,7 @@ void task (void * args) {
   
   do {
     LED_toggle(led_1);
+    printf("This is the main task\n\r");
     vTaskDelay(2000);
   } while(1);
 
@@ -49,8 +58,12 @@ void task (void * args) {
 int main(void)
 {
 
+#ifdef FLASH_RAM
+  low_level_init_ramflash();
+#endif
+  
   TRACE_CONFIGURE_ISP(DBGU_STANDARD, 115200, BOARD_MCK);
-
+  
   CP15_Enable_I_Cache();
 
   printf("-- ISIS Template Project %s --\n\r", SOFTPACK_VERSION);
@@ -66,5 +79,5 @@ int main(void)
 	      NULL, configMAX_PRIORITIES - 1, NULL );
 
   vTaskStartScheduler();
-
+  
 }
