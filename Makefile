@@ -48,9 +48,9 @@ TRACE_LEVEL	= 5
 # Optimization level, put in comment for debugging
 OPTIMIZATION 	= -O0
 
-AT91LIB		= ./at91lib
+AT91LIB		= ./at91
 FREERTOS	= ./freertos
-
+LIBPUS		= ./pus
 # Output file basename
 OUTPUT		= img-$(BOARD)-$(CHIP)
 
@@ -70,7 +70,7 @@ OBJ		= obj
 #		Tools
 #-------------------------------------------------------------------------------
 
-# Tools suffix when cross-compiling
+# Tools prefix when cross-compiling
 CROSS_COMPILE=arm-none-eabi-
 
 # Compilation tools
@@ -107,20 +107,28 @@ INCLUDES	+= -Isatellite-subsystems/include/
 INCLUDES	+= -Imission-support/include/mission-support/
 INCLUDES	+= -Imission-support/include/
 
+INCLUDES	+= -I$(LIBPUS)/include/pus/bsp
+INCLUDES	+= -I$(LIBPUS)/include/pus/configuration/igosat
+INCLUDES	+= -I$(LIBPUS)/include/pus
+INCLUDES	+= -I$(LIBPUS)/include
+ 
 INCLUDES	+= -Isrc/
 
 TARGET_OPTS = -mcpu=arm926ej-s
+LIBPUS_OPTS = LPUS_CONFIGURATION_ENABLE_ALL_FCT
 
 CFLAGS	=  $(TARGET_OPTS)
-CFLAGS	+= -Wall -Wextra -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
-CFLAGS	+= -DDEBUG=1 
+CFLAGS	+= -Wall -Wextra -ffunction-sections -D"IOBC_REV=C"
+CFLAGS	+= -DDEBUG=1  -D$(LIBPUS_OPTS)
 CFLAGS	+= -g $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL)
 ASFLAGS	=  $(TARGET_OPTS)
-ASFLAGS += -Wall -Wextra -ffunction-sections -fmessage-length=0  -D"IOBC_REV=C"
-ASFLAGS += -DDEBUG=1
+ASFLAGS += -Wall -Wextra -ffunction-sections -D"IOBC_REV=C"
+ASFLAGS += -DDEBUG=1 -D$(LIBPUS_OPTS)
 ASFLAGS += $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL) -D__ASSEMBLY__
-LDFLAGS	=  $(TARGET_OPTS)  $(OPTIMIZATION) -fmessage-length=0 -ffunction-sections -Wall -Wextra
+LDFLAGS	=  $(TARGET_OPTS) $(OPTIMIZATION) -Wall -Wextra
+LDFLAGS +=  -ffunction-sections
 LDFLAGS += -g -Wl,-Map,$(OUTPUT).map -nostartfiles -Xlinker --gc-sections
+LDLIBS  = -lpusD -lMissionSupportD -lSatelliteSubsystemsD -lHCCD -lHALD -lm -lFreeRTOSD -lAt91D
 
 
 #-------------------------------------------------------------------------------
@@ -135,10 +143,12 @@ VPATH 	+= hal/lib/
 VPATH 	+= hcc/lib/
 VPATH 	+= satellite-subsystems/lib/
 VPATH	+= mission-support/lib/
+VPATH	+= pus/lib/
+VPATH	+= /usr/lib/arm-none-eabi/lib/
 
 # Objects build from C source files
 C_OBJECTS	 = main.o
-
+C_OBJECTS	 += low_level_ramflash.o
 
 # Objects build from assembly source files
 ASM_OBJECTS	= board_fstartup.o
@@ -158,19 +168,18 @@ define RULES
 C_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(C_OBJECTS))
 ASM_OBJECTS_$(1) = $(addprefix $(OBJ)/$(1)_, $(ASM_OBJECTS))
 
-$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) -lMissionSupportD -lSatelliteSubsystemsD -lHCCD -lHALD -lFreeRTOSD -lAt91D
-	$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
-	--specs=nano.specs -lc -u _printf_float -u _scanf_float -o $(OUTPUT)-$$@.elf $$^
-	$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin
-	$(SIZE) --format=berkeley $$^ $(OUTPUT)-$$@.elf
+$(1): $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) $(LDLIBS)
+	@$(CC) $(LDFLAGS) -Tsrc/sdram.lds \
+	--specs=nano.specs -lc -u _printf_float -u _scanf_float \
+	-o $(OUTPUT)-$$@.elf $$^
+	@$(OBJCOPY) -O binary $(OUTPUT)-$$@.elf $(OUTPUT)-$$@.bin
+	$(SIZE) --format=berkeley $$(ASM_OBJECTS_$(1)) $$(C_OBJECTS_$(1)) $(OUTPUT)-$$@.elf
 
 $$(C_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.c Makefile $(OBJ) $(BIN)
-	@echo $(CFLAGS)
-	$(CC) -E -C $(CFLAGS) -D$(1) -MMD -MP -MF$$(@:%o=%d) -MT$$(@:%o=%d) -o $$(@:%o=%i) $$<
-	$(CC) $(CFLAGS) -D$(1) -MMD -MP -MF$$(@:%o=%d) -MT$$(@:%o=%d) -c -o $$@ $$<
+	@$(CC) $(CFLAGS) -D$(1) -MMD -MP -MF$$(@:%o=%d) -MT$$(@:%o=%d) -c -o $$@ $$<
 
 $$(ASM_OBJECTS_$(1)): $(OBJ)/$(1)_%.o: %.S Makefile $(OBJ) $(BIN)
-	$(CC) $(ASFLAGS) -D$(1) -c -o $$@ $$<
+	@$(CC) $(ASFLAGS) -D$(1) -c -o $$@ $$<
 
 debug_$(1): $(1)
 	@echo "Starting a remote gdb session."
@@ -205,6 +214,6 @@ ram :
 $(foreach MEMORY, $(MEMORIES), $(eval $(call RULES,$(MEMORY))))
 
 clean:
-	-rm -f $(OBJ)/*.o $(OBJ)/*.d $(BIN)/*.bin $(BIN)/*.elf $(BIN)/*.map flash.log cmd.gdb
+	-rm -f $(OBJ)/*.o $(OBJ)/*.i $(OBJ)/*.d $(BIN)/*.bin $(BIN)/*.elf $(BIN)/*.map flash.log cmd.gdb
 
 
