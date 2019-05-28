@@ -51,6 +51,8 @@ OPTIMIZATION 	= -O0
 AT91LIB		= ./at91
 FREERTOS	= ./freertos
 LIBPUS		= ./pus
+
+
 # Output file basename
 OUTPUT		= img-$(BOARD)-$(CHIP)
 
@@ -81,24 +83,24 @@ OBJCOPY	= $(CROSS_COMPILE)objcopy
 
 # Flags
 
-INCLUDES	=  -I$(AT91LIB)/include/at91/boards/$(BOARD)
-INCLUDES	+= -I$(AT91LIB)/include/at91/peripherals
-INCLUDES	+= -I$(AT91LIB)/include/at91/components
-INCLUDES	+= -I$(AT91LIB)/include/at91
+INCLUDES	=  -I$(AT91LIB)/include/at91/boards/$(BOARD)/
+INCLUDES	+= -I$(AT91LIB)/include/at91/peripherals/
+INCLUDES	+= -I$(AT91LIB)/include/at91/components/
+INCLUDES	+= -I$(AT91LIB)/include/at91/
 INCLUDES	+= -I$(AT91LIB)/include/
 
 
-INCLUDES	+= -I$(FREERTOS)/portable/GCC/ARM9_AT91SAM9G20
-INCLUDES	+= -I$(FREERTOS)/portable/MemMang
-INCLUDES	+= -I$(FREERTOS)/portable/
-INCLUDES	+= -I$(FREERTOS)/include
+INCLUDES	+= -I$(FREERTOS)/include/freertos/portable/GCC/ARM9_AT91SAM9G20/
+INCLUDES	+= -I$(FREERTOS)/include/freertos/portable/MemMang/
+INCLUDES	+= -I$(FREERTOS)/include/freertos/portable/
+INCLUDES	+= -I$(FREERTOS)/include/
 INCLUDES	+= -I$(FREERTOS)
 
 INCLUDES	+= -Ihal/include/hal/
 INCLUDES	+= -Ihal/include/
 
 INCLUDES	+= -Ihcc/include/hcc/
-INCLUDES	+= -Ihcc/include/psp/include
+INCLUDES	+= -Ihcc/include/psp/include/
 INCLUDES	+= -Ihcc/include/
 
 INCLUDES	+= -Isatellite-subsystems/include/satellite-subsystems/
@@ -108,10 +110,10 @@ INCLUDES	+= -Imission-support/include/mission-support/
 INCLUDES	+= -Imission-support/include/
 
 INCLUDES	+= -I$(LIBPUS)/include/pus/bsp
-INCLUDES	+= -I$(LIBPUS)/include/pus/configuration/igosat
-INCLUDES	+= -I$(LIBPUS)/include/pus
-INCLUDES	+= -I$(LIBPUS)/include
- 
+INCLUDES	+= -I$(LIBPUS)/include/pus/configuration/igosat/
+INCLUDES	+= -I$(LIBPUS)/include/pus/
+INCLUDES	+= -I$(LIBPUS)/include/
+
 INCLUDES	+= -Isrc/
 
 TARGET_OPTS = -mcpu=arm926ej-s
@@ -119,14 +121,14 @@ LIBPUS_OPTS = LPUS_CONFIGURATION_ENABLE_ALL_FCT
 
 CFLAGS	=  $(TARGET_OPTS)
 CFLAGS	+= -Wall -Wextra -ffunction-sections -D"IOBC_REV=C"
-CFLAGS	+= -DDEBUG=1  -D$(LIBPUS_OPTS)
+CFLAGS	+= -DDEBUG=1 -D$(LIBPUS_OPTS)
 CFLAGS	+= -g $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL)
 ASFLAGS	=  $(TARGET_OPTS)
 ASFLAGS += -Wall -Wextra -ffunction-sections -D"IOBC_REV=C"
 ASFLAGS += -DDEBUG=1 -D$(LIBPUS_OPTS)
 ASFLAGS += $(OPTIMIZATION) $(INCLUDES) -D$(CHIP) -DTRACE_LEVEL=$(TRACE_LEVEL) -D__ASSEMBLY__
-LDFLAGS	=  $(TARGET_OPTS) $(OPTIMIZATION) -Wall -Wextra
-LDFLAGS +=  -ffunction-sections
+LDFLAGS =  $(TARGET_OPTS) $(OPTIMIZATION) -Wall -Wextra
+LDFLAGS += -ffunction-sections
 LDFLAGS += -g -Wl,-Map,$(OUTPUT).map -nostartfiles -Xlinker --gc-sections
 LDLIBS  = -lpusD -lMissionSupportD -lSatelliteSubsystemsD -lHCCD -lHALD -lm -lFreeRTOSD -lAt91D
 
@@ -143,7 +145,7 @@ VPATH 	+= hal/lib/
 VPATH 	+= hcc/lib/
 VPATH 	+= satellite-subsystems/lib/
 VPATH	+= mission-support/lib/
-VPATH	+= pus/lib/
+VPATH	+= $(LIBPUS)/lib/
 VPATH	+= /usr/lib/arm-none-eabi/lib/
 
 # Objects build from C source files
@@ -193,7 +195,7 @@ endif
 
 .PHONY: nand ram jlink flash connect clean
 
-jlink: sdram
+jlink:
 	@echo "Starting a J-Link connection."
 	./opt/jlink/jlink.sh
 
@@ -215,5 +217,3 @@ $(foreach MEMORY, $(MEMORIES), $(eval $(call RULES,$(MEMORY))))
 
 clean:
 	-rm -f $(OBJ)/*.o $(OBJ)/*.i $(OBJ)/*.d $(BIN)/*.bin $(BIN)/*.elf $(BIN)/*.map flash.log cmd.gdb
-
-
